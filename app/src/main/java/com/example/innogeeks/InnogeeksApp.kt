@@ -28,7 +28,10 @@ class InnogeeksApp : Application(){
                 com.example.innogeeks.feature_home.presentation.di.homePresentationModule,
                 // feature: domains
                 com.example.innogeeks.feature_domains.data.di.domainsDataModule,
-                com.example.innogeeks.feature_domains.presentation.di.domainsPresentationModule
+                com.example.innogeeks.feature_domains.presentation.di.domainsPresentationModule,
+                // feature: events
+                com.example.innogeeks.feature_events.data.di.eventsDataModule,
+                com.example.innogeeks.feature_events.presentation.di.eventsPresentationModule
             )
         }
     }

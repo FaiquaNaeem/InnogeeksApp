@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import com.example.innogeeks.core.presentation.components.AuthGlowBackground
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_domains.presentation.domains.DomainsRoot
+import com.example.innogeeks.feature_events.presentation.events.EventsRoot
 import com.example.innogeeks.feature_home.domain.model.ClubStats
 import com.example.innogeeks.feature_home.presentation.home.HomeRoot
 import com.example.innogeeks.feature_home.presentation.home.HomeScreen
@@ -82,7 +83,7 @@ fun MainScaffold(
             when (selectedTab) {
                 0 -> homeContent(hazeState)
                 1 -> DomainsRoot(hazeState = hazeState)
-                2 -> TabPlaceholder("Events")
+                2 -> EventsRoot(hazeState = hazeState)
                 3 -> TabPlaceholder("Profile")
             }
         }

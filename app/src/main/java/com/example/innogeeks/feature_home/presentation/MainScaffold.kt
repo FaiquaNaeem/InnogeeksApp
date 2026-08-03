@@ -46,6 +46,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.innogeeks.core.domain.session.Session
 import com.example.innogeeks.core.presentation.components.AuthGlowBackground
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_domains.presentation.domains.DomainsRoot
@@ -72,6 +73,8 @@ private val guestTabs = listOf(
 
 @Composable
 fun MainScaffold(
+    session: Session = Session.Guest,
+    onNavigateToAuth: () -> Unit = {},
     homeContent: (@Composable (HazeState) -> Unit)? = null
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
@@ -85,7 +88,10 @@ fun MainScaffold(
                 // The Home top-bar avatar jumps straight to the Profile tab.
                 0 -> homeContent?.invoke(hazeState) ?: HomeRoot(
                     hazeState = hazeState,
-                    onNavigateToProfile = { selectedTab = 3 }
+                    session = session,
+                    // A guest has no profile to jump to, so the avatar becomes a login tap.
+                    onNavigateToProfile = { selectedTab = 3 },
+                    onNavigateToAuth = onNavigateToAuth
                 )
                 1 -> DomainsRoot(hazeState = hazeState)
                 2 -> EventsRoot(hazeState = hazeState)

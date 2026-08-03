@@ -42,7 +42,7 @@ class IntroViewModel(
     private fun finishIntro() {
         viewModelScope.launch {
             sessionRepository.markIntroSeen()   // returning users skip the intro next launch
-            _events.send(IntroEvent.NavigateToLogin)
+            _events.send(IntroEvent.NavigateToHome)
         }
     }
 }

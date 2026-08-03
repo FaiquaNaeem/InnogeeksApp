@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.innogeeks.core.domain.session.Session
 import com.example.innogeeks.core.presentation.components.SectionLabel
 import com.example.innogeeks.feature_home.domain.model.Achievement
 import com.example.innogeeks.feature_home.domain.model.ClubStats
@@ -39,7 +40,9 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeRoot(
     hazeState: HazeState,
+    session: Session,
     onNavigateToProfile: () -> Unit,
+    onNavigateToAuth: () -> Unit,
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -52,14 +55,33 @@ fun HomeRoot(
         }
     }
 
-    HomeScreen(state = state, hazeState = hazeState, onAction = viewModel::onAction)
+    HomeScreen(
+        state = state,
+        hazeState = hazeState,
+        onAction = viewModel::onAction,
+        // Until a /me endpoint exists, the email local-part is the only initials source.
+        initials = (session as? Session.Registered)?.collegeEmail?.toInitials(),
+        onLoginClick = onNavigateToAuth
+    )
 }
+
+private fun String.toInitials(): String =
+    substringBefore('@')
+        .split('.', '_', '-')
+        .filter { it.isNotBlank() }
+        .take(2)
+        .map { it.first().uppercaseChar() }
+        .joinToString("")
+        .ifEmpty { "?" }
 
 @Composable
 fun HomeScreen(
     state: HomeState,
     hazeState: HazeState,
-    onAction: (HomeAction) -> Unit
+    onAction: (HomeAction) -> Unit,
+    // null means guest — the top bar shows a Log in pill instead of an avatar.
+    initials: String? = null,
+    onLoginClick: () -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.isLoading) {
@@ -87,8 +109,9 @@ fun HomeScreen(
         ) {
             item {
                 HomeTopBar(
-                    initials = "AY",
-                    onProfileClick = { onAction(HomeAction.OnProfileClick) }
+                    initials = initials,
+                    onProfileClick = { onAction(HomeAction.OnProfileClick) },
+                    onLoginClick = onLoginClick
                 )
             }
 

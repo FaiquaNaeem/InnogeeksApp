@@ -57,7 +57,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun IntroRoot(
-    onNavigateToLogin: () -> Unit,
+    onNavigateToHome: () -> Unit,
     viewModel: IntroViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -79,7 +79,7 @@ fun IntroRoot(
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is IntroEvent.ScrollToPage -> scope.launch { pagerState.animateScrollToPage(event.page) }
-            is IntroEvent.NavigateToLogin -> onNavigateToLogin()
+            is IntroEvent.NavigateToHome -> onNavigateToHome()
         }
     }
 

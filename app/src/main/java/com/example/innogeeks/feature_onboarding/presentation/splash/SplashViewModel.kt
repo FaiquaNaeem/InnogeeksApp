@@ -2,7 +2,7 @@ package com.example.innogeeks.feature_onboarding.presentation.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.innogeeks.feature_onboarding.domain.auth.AuthRepository
+import com.example.innogeeks.core.domain.session.SessionRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
-// Injects AuthRepository DIRECTLY (not via a use case): reading hasSeenIntro() is a trivial
+// Injects SessionRepository DIRECTLY (not via a use case): reading hasSeenIntro() is a trivial
 // pass-through with no logic/validation, so a use case would be empty ceremony.
 class SplashViewModel(
-    private val authRepository: AuthRepository
+    private val sessionRepository: SessionRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SplashState())
@@ -36,7 +36,7 @@ class SplashViewModel(
             // (spin-up -> pulse -> identity -> anchor -> a beat of ambient) before we route away.
             delay(3800.milliseconds)
 
-            val seenIntro = authRepository.hasSeenIntro()
+            val seenIntro = sessionRepository.hasSeenIntro()
             _state.update { it.copy(isLoading = false) }
 
             // First launch -> intro slides; returning user -> straight to login.

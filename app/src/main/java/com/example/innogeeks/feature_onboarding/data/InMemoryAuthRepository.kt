@@ -19,8 +19,6 @@ class InMemoryAuthRepository: AuthRepository {
     private data class Account(val password: String, val name: String)
     private val accounts = mutableMapOf<String, Account>()
 
-    private var IntroSeen = false
-
     override suspend fun signUp(
         name : String,
         email: String,
@@ -58,15 +56,7 @@ class InMemoryAuthRepository: AuthRepository {
     }
 
     override suspend fun logout() {
-        // Nothing to clear in the fake yet — real DataStore token-clear comes later.
-    }
-
-    override suspend fun hasSeenIntro(): Boolean {
-        return IntroSeen
-    }
-
-    override suspend fun markIntroSeen() {
-        IntroSeen = true
+        // Nothing to clear in the fake — the real token lives in SessionRepository.
     }
 
 }

@@ -14,4 +14,18 @@
     <string name="error_invalid_email">That doesn\'t look like a valid email.</string>
     <string name="error_empty_password">Please enter your password.</string>
     <string name="error_password_too_short">Password must be at least 8 characters.</string>
+
+    <!-- Auth API errors. One generic message for access denied — the backend never says which check failed. -->
+    <string name="error_app_access_denied">We couldn\'t find a paid registration for this email. Please check with the Innogeeks team.</string>
+    <string name="error_validation">Please check the details you entered and try again.</string>
+    <string name="error_password_already_set">You already have a password. Log in with it instead.</string>
+    <string name="error_verification_code_cooldown">Please wait before requesting another code.</string>
+    <string name="error_verification_code_invalid">That code is invalid or has expired. Request a new one.</string>
+    <string name="error_password_setup_token_invalid">Your verification expired. Please start again.</string>
+    <string name="error_password_setup_not_allowed">Password setup isn\'t available for this account.</string>
+    <string name="error_email_queue_unavailable">We couldn\'t send the email right now. Please try again.</string>
+    <string name="error_invalid_credentials">Incorrect email or password.</string>
+    <string name="error_unsupported_version">This version of the app is out of date. Please update it.</string>
+    <string name="error_password_too_long">Password must be 128 characters or fewer.</string>
+    <string name="error_passwords_do_not_match">Passwords don\'t match.</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.example.innogeeks.core.data.networking
 
 import com.example.innogeeks.BuildConfig
+import com.example.innogeeks.core.domain.error.ApiFailure
 import com.example.innogeeks.core.domain.error.DataError
 import com.example.innogeeks.core.domain.util.Result
 import io.ktor.client.HttpClient
@@ -101,14 +102,69 @@ suspend inline fun <reified T> responseToResult(
 ): Result<T, DataError.Network> {
     return when (response.status.value) {
         in 200..299 -> Result.Success(response.body<T>())
+        400 -> Result.Error(DataError.Network.BAD_REQUEST)
         401 -> Result.Error(DataError.Network.UNAUTHORIZED)
+        403 -> Result.Error(DataError.Network.FORBIDDEN)
+        404 -> Result.Error(DataError.Network.NOT_FOUND)
         408 -> Result.Error(DataError.Network.REQUEST_TIMEOUT)
         409 -> Result.Error(DataError.Network.CONFLICT)
         413 -> Result.Error(DataError.Network.PAYLOAD_TOO_LARGE)
         429 -> Result.Error(DataError.Network.TOO_MANY_REQUESTS)
+        503 -> Result.Error(DataError.Network.SERVICE_UNAVAILABLE)
         in 500..599 -> Result.Error(DataError.Network.SERVER_ERROR)
         else -> Result.Error(DataError.Network.UNKNOWN)
     }
+}
+
+// Envelope-aware POST for endpoints that return {"data":...} / {"error":{"code":...}}.
+// Unlike post() above, this preserves error.code — the contract forbids branching on anything else.
+suspend inline fun <reified Request : Any, reified Response : Any> HttpClient.postEnveloped(
+    route: String,
+    body: Request
+): Result<Response, ApiFailure> {
+    val response = try {
+        post {
+            url(constructRoute(route))
+            setBody(body)
+        }
+    } catch (e: UnresolvedAddressException) {
+        e.printStackTrace()
+        return Result.Error(ApiFailure.Transport(DataError.Network.NO_INTERNET))
+    } catch (e: SerializationException) {
+        e.printStackTrace()
+        return Result.Error(ApiFailure.Transport(DataError.Network.SERIALIZATION))
+    } catch (e: Exception) {
+        currentCoroutineContext().ensureActive()
+        e.printStackTrace()
+        return Result.Error(ApiFailure.Transport(DataError.Network.UNKNOWN))
+    }
+
+    // A body that won't parse is a transport problem, not a business error.
+    val envelope = try {
+        response.body<ApiEnvelope<Response>>()
+    } catch (e: Exception) {
+        currentCoroutineContext().ensureActive()
+        e.printStackTrace()
+        return Result.Error(ApiFailure.Transport(DataError.Network.SERIALIZATION))
+    }
+
+    val payload = envelope.data
+    if (response.status.value in 200..299 && payload != null) {
+        return Result.Success(payload)
+    }
+
+    val code = envelope.error?.code
+    if (!code.isNullOrBlank()) {
+        return Result.Error(ApiFailure.Api(code))
+    }
+
+    // Non-2xx with no usable error code — fall back to the status mapping.
+    val statusError = responseToResult<Unit>(response)
+    return Result.Error(
+        ApiFailure.Transport(
+            if (statusError is Result.Error) statusError.error else DataError.Network.UNKNOWN
+        )
+    )
 }
 
 // Prepends BASE_URL to a route (BuildConfig.BASE_URL is the value set in build.gradle.kts).

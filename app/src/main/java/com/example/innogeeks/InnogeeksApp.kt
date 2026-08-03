@@ -25,7 +25,10 @@ class InnogeeksApp : Application(){
                 onboardingPresentationModule,
                 // feature: home
                 com.example.innogeeks.feature_home.data.di.homeDataModule,
-                com.example.innogeeks.feature_home.presentation.di.homePresentationModule
+                com.example.innogeeks.feature_home.presentation.di.homePresentationModule,
+                // feature: domains
+                com.example.innogeeks.feature_domains.data.di.domainsDataModule,
+                com.example.innogeeks.feature_domains.presentation.di.domainsPresentationModule
             )
         }
     }

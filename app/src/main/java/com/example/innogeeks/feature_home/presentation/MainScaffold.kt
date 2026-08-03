@@ -254,9 +254,10 @@ private fun MainScaffoldPreview() {
                 HomeScreen(
                     state = HomeState(
                         isLoading = false,
-                        stats = ClubStats(150, 45, 5, 24),
+                        stats = ClubStats(150, 45, 6, 24),
                         domains = emptyList(),
-                        events = emptyList()
+                        tickerRows = listOf(listOf("Technology", "Design")),
+                        cultureMoments = listOf("📡", "🤖", "🏆")
                     ),
                     hazeState = hazeState,
                     onAction = {}

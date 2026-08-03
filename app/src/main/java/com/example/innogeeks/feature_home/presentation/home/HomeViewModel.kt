@@ -28,27 +28,41 @@ class HomeViewModel(
     private fun loadHomeData() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            
-            // Concurrently fetch all 3 data sources
+
+            // All five sources are independent, so fetch them concurrently.
             val statsDeferred = async { repository.getClubStats() }
             val domainsDeferred = async { repository.getDomains() }
-            val eventsDeferred = async { repository.getUpcomingEvents() }
-            
+            val achievementsDeferred = async { repository.getAchievements() }
+            val tickerDeferred = async { repository.getTickerKeywords() }
+            val cultureDeferred = async { repository.getCultureMoments() }
+
             val statsResult = statsDeferred.await()
             val domainsResult = domainsDeferred.await()
-            val eventsResult = eventsDeferred.await()
-            
-            if (statsResult.isSuccess && domainsResult.isSuccess && eventsResult.isSuccess) {
+            val achievementsResult = achievementsDeferred.await()
+            val tickerResult = tickerDeferred.await()
+            val cultureResult = cultureDeferred.await()
+
+            val allSucceeded = statsResult.isSuccess &&
+                    domainsResult.isSuccess &&
+                    achievementsResult.isSuccess &&
+                    tickerResult.isSuccess &&
+                    cultureResult.isSuccess
+
+            if (allSucceeded) {
+                val domains = domainsResult.getOrDefault(emptyList())
                 _state.update {
                     it.copy(
                         isLoading = false,
                         stats = statsResult.getOrNull(),
-                        domains = domainsResult.getOrDefault(emptyList()),
-                        events = eventsResult.getOrDefault(emptyList())
+                        domains = domains,
+                        achievements = achievementsResult.getOrDefault(emptyList()),
+                        tickerRows = tickerResult.getOrDefault(emptyList()),
+                        cultureMoments = cultureResult.getOrDefault(emptyList()),
+                        selectedDomainId = domains.firstOrNull()?.id
                     )
                 }
             } else {
-                _state.update { 
+                _state.update {
                     it.copy(
                         isLoading = false,
                         error = "Failed to load home data. Please try again."
@@ -60,14 +74,13 @@ class HomeViewModel(
 
     fun onAction(action: HomeAction) {
         when (action) {
-            is HomeAction.OnDomainClick -> {
-                viewModelScope.launch { _events.send(HomeEvent.NavigateToDomain(action.domainId)) }
+            // Selection is pure state — no navigation, the wheel just snaps.
+            is HomeAction.OnDomainSelected -> {
+                _state.update { it.copy(selectedDomainId = action.domainId) }
             }
-            is HomeAction.OnEventClick -> {
-                viewModelScope.launch { _events.send(HomeEvent.NavigateToEvent(action.eventId)) }
-            }
-            HomeAction.OnJoinClick -> {
-                viewModelScope.launch { _events.send(HomeEvent.NavigateToJoin) }
+
+            HomeAction.OnProfileClick -> {
+                viewModelScope.launch { _events.send(HomeEvent.NavigateToProfile) }
             }
         }
     }

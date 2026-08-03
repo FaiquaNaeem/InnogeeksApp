@@ -95,7 +95,7 @@ fun MainScaffold(
                 )
                 1 -> DomainsRoot(hazeState = hazeState)
                 2 -> EventsRoot(hazeState = hazeState)
-                3 -> ProfileRoot(hazeState = hazeState)
+                3 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
             }
         }
 

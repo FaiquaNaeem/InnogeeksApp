@@ -32,8 +32,7 @@ class InnogeeksApp : Application(){
                 // feature: events
                 com.example.innogeeks.feature_events.data.di.eventsDataModule,
                 com.example.innogeeks.feature_events.presentation.di.eventsPresentationModule,
-                // feature: profile
-                com.example.innogeeks.feature_profile.data.di.profileDataModule,
+                // feature: profile — no data module; profile content is session-derived only.
                 com.example.innogeeks.feature_profile.presentation.di.profilePresentationModule
             )
         }

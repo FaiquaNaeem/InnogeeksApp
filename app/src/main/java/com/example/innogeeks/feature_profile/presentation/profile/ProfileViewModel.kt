@@ -2,7 +2,8 @@ package com.example.innogeeks.feature_profile.presentation.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.innogeeks.feature_profile.domain.ProfileRepository
+import com.example.innogeeks.core.domain.session.Session
+import com.example.innogeeks.core.domain.session.SessionRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
-    private val repository: ProfileRepository
+    private val sessionRepository: SessionRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -21,25 +22,11 @@ class ProfileViewModel(
     val events = _events.receiveAsFlow()
 
     init {
-        loadProfile()
-    }
-
-    private fun loadProfile() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
-
-            repository.getProfile()
-                .onSuccess { profile ->
-                    _state.update { it.copy(isLoading = false, profile = profile) }
-                }
-                .onFailure {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "Failed to load profile. Please try again."
-                        )
-                    }
-                }
+            // Sign-out flips this to Guest, so the tab redraws without a manual reload.
+            sessionRepository.session.collect { session ->
+                _state.update { it.copy(session = session) }
+            }
         }
     }
 
@@ -55,13 +42,18 @@ class ProfileViewModel(
                 )
             }
 
-            // Both buttons are demo-only until auth lands in Phase 2.
-            ProfileAction.OnEditClick -> viewModelScope.launch {
-                _events.send(ProfileEvent.ShowToast("Profile updated"))
+            ProfileAction.OnLoginClick -> viewModelScope.launch {
+                _events.send(ProfileEvent.NavigateToAuth)
             }
 
-            ProfileAction.OnLogOutClick -> viewModelScope.launch {
-                _events.send(ProfileEvent.ShowToast("Logged out (demo)"))
+            ProfileAction.OnLogOutClick -> _state.update { it.copy(isLogOutDialogVisible = true) }
+
+            ProfileAction.OnLogOutDismissed ->
+                _state.update { it.copy(isLogOutDialogVisible = false) }
+
+            ProfileAction.OnLogOutConfirmed -> viewModelScope.launch {
+                _state.update { it.copy(isLogOutDialogVisible = false, expandedSection = null) }
+                sessionRepository.signOut()
             }
         }
     }

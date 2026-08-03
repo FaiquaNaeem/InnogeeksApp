@@ -2,12 +2,9 @@ package com.example.innogeeks.feature_profile.presentation.profile.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,11 +21,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.innogeeks.feature_profile.domain.model.DetailEntry
-import com.example.innogeeks.feature_profile.domain.model.DomainBadge
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 
-// Avatar + name + course line + role chip.
+// Avatar + name + subtitle + role chip. Shared by the guest and registered variants.
 @Composable
 fun ProfileHero(
     initials: String,
@@ -82,103 +77,31 @@ fun ProfileHero(
     }
 }
 
-// Left-aligned label, right-aligned value.
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-fun DetailRow(
-    entry: DetailEntry,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = entry.label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = entry.value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.End,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-// Dot-prefixed chips showing which domains the member belongs to.
-@Composable
-fun DomainBadgeRow(
-    badges: List<DomainBadge>,
-    modifier: Modifier = Modifier
-) {
-    val scheme = MaterialTheme.colorScheme
-    val accents = listOf(
-        scheme.primary,
-        scheme.secondary,
-        scheme.tertiary,
-        scheme.secondaryContainer,
-        scheme.primaryContainer,
-        scheme.onPrimaryContainer
-    )
-
-    FlowRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        badges.forEach { badge ->
-            val accent = accents[badge.accentIndex % accents.size]
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(percent = 50))
-                    .background(scheme.surfaceContainerHigh)
-                    .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
-                    .padding(horizontal = 10.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(accent)
-                )
-                Text(
-                    text = badge.label.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.6.sp,
-                    color = scheme.onSurface
-                )
-            }
+private fun ProfileHeroGuestPreview() {
+    InnogeeksTheme {
+        Column(modifier = Modifier.padding(18.dp)) {
+            ProfileHero(
+                initials = "?",
+                name = "Guest",
+                subtitle = "You're browsing Innogeeks without an account.",
+                roleChip = "Not signed in"
+            )
         }
     }
 }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun ProfileComponentsPreview() {
+private fun ProfileHeroRegisteredPreview() {
     InnogeeksTheme {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+        Column(modifier = Modifier.padding(18.dp)) {
             ProfileHero(
-                initials = "AY",
-                name = "Ayush",
-                subtitle = "ECE-A · 5th Semester · KIET Group of Institutions",
-                roleChip = "Innogeeks Core Team"
-            )
-            DetailRow(DetailEntry("Enrollment No.", "202401100700051"))
-            DetailRow(DetailEntry("Research", "Pressure-measurement device for orthotic design"))
-            DomainBadgeRow(
-                badges = listOf(DomainBadge("Web Dev", 0), DomainBadge("AR / VR", 3))
+                initials = "AK",
+                name = "ayush.kumar",
+                subtitle = "ayush.kumar@kiet.edu",
+                roleChip = "Registered"
             )
         }
     }

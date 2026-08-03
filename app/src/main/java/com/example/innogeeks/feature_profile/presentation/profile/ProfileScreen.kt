@@ -8,39 +8,33 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.innogeeks.core.domain.session.Session
 import com.example.innogeeks.core.presentation.components.ExpandableRow
 import com.example.innogeeks.core.presentation.components.SectionLabel
-import com.example.innogeeks.core.presentation.components.StatTile
-import com.example.innogeeks.feature_profile.domain.model.DetailEntry
-import com.example.innogeeks.feature_profile.domain.model.DomainBadge
-import com.example.innogeeks.feature_profile.domain.model.StudentProfile
-import com.example.innogeeks.feature_profile.presentation.profile.components.DetailRow
-import com.example.innogeeks.feature_profile.presentation.profile.components.DomainBadgeRow
 import com.example.innogeeks.feature_profile.presentation.profile.components.ProfileHero
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
@@ -51,28 +45,20 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ProfileRoot(
     hazeState: HazeState,
+    onNavigateToAuth: () -> Unit,
     viewModel: ProfileViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         viewModel.events.collectLatest { event ->
             when (event) {
-                is ProfileEvent.ShowToast -> snackbarHostState.showSnackbar(event.message)
+                ProfileEvent.NavigateToAuth -> onNavigateToAuth()
             }
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        ProfileScreen(state = state, hazeState = hazeState, onAction = viewModel::onAction)
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 110.dp)
-        )
-    }
+    ProfileScreen(state = state, hazeState = hazeState, onAction = viewModel::onAction)
 }
 
 @Composable
@@ -84,24 +70,6 @@ fun ProfileScreen(
     val scheme = MaterialTheme.colorScheme
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            return@Box
-        }
-
-        val profile = state.profile
-        if (state.error != null || profile == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = state.error ?: "Profile unavailable.",
-                    color = scheme.error
-                )
-            }
-            return@Box
-        }
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -119,90 +87,206 @@ fun ProfileScreen(
                 )
             }
 
-            item { ProfileHero(
-                initials = profile.initials,
-                name = profile.name,
-                subtitle = profile.subtitle,
-                roleChip = profile.roleChip,
-                modifier = Modifier.padding(vertical = 6.dp)
-            ) }
-
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatTile(
-                        value = profile.domainCount,
-                        caption = "Domains",
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatTile(
-                        value = profile.eventCount,
-                        caption = "Events",
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatTile(
-                        value = profile.achievementCount,
-                        caption = "Achievements",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            item {
-                ExpandableRow(
-                    title = "Academic Details",
-                    subtitle = "Enrollment, branch & semester",
-                    isExpanded = state.expandedSection == ProfileSection.ACADEMIC,
-                    onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ACADEMIC)) },
-                    leading = { IconChip(emoji = "🎓", background = scheme.primary) }
-                ) {
-                    profile.academicDetails.forEach { DetailRow(entry = it) }
-                }
-            }
-
-            item {
-                ExpandableRow(
-                    title = "Club Involvement",
-                    subtitle = "Role, domains & research",
-                    isExpanded = state.expandedSection == ProfileSection.CLUB,
-                    onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.CLUB)) },
-                    leading = { IconChip(emoji = "🚀", background = scheme.secondaryContainer) }
-                ) {
-                    profile.clubDetails.forEach { DetailRow(entry = it) }
-                    SectionLabel(text = "Domains", modifier = Modifier.padding(top = 8.dp))
-                    DomainBadgeRow(
-                        badges = profile.domainBadges,
-                        modifier = Modifier.padding(top = 6.dp)
-                    )
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.padding(top = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    ProfileButton(
-                        text = "Edit Profile",
-                        isPrimary = true,
-                        onClick = { onAction(ProfileAction.OnEditClick) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ProfileButton(
-                        text = "Log Out",
-                        isPrimary = false,
-                        onClick = { onAction(ProfileAction.OnLogOutClick) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+            when (val session = state.session) {
+                Session.Guest -> guestProfile(onAction = onAction)
+                is Session.Registered -> registeredProfile(
+                    collegeEmail = session.collegeEmail,
+                    expandedSection = state.expandedSection,
+                    onAction = onAction
+                )
             }
         }
+
+        if (state.isLogOutDialogVisible) {
+            LogOutDialog(
+                onConfirm = { onAction(ProfileAction.OnLogOutConfirmed) },
+                onDismiss = { onAction(ProfileAction.OnLogOutDismissed) }
+            )
+        }
+    }
+}
+
+// Guest gets an honest login CTA and club info — no invented student, no stat tiles.
+private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
+    item {
+        ProfileHero(
+            initials = "?",
+            name = "Guest",
+            subtitle = "You're browsing Innogeeks without an account.",
+            roleChip = "Not signed in",
+            modifier = Modifier.padding(vertical = 6.dp)
+        )
+    }
+
+    item {
+        InfoPanel(
+            title = "Already registered?",
+            body = "Accounts are created for students who completed the offline registration. " +
+                "Check your inbox — we email your college ID and a password."
+        )
+    }
+
+    item {
+        ProfileButton(
+            text = "Log In",
+            isPrimary = true,
+            onClick = { onAction(ProfileAction.OnLoginClick) },
+            modifier = Modifier.padding(top = 2.dp)
+        )
+    }
+
+    item { SectionLabel(text = "About Innogeeks", modifier = Modifier.padding(top = 10.dp)) }
+
+    item {
+        InfoPanel(
+            title = "A student tech community at KIET",
+            body = "We build, break and ship things together — hackathons, workshops, " +
+                "research projects and open source, run entirely by students."
+        )
+    }
+
+    item {
+        InfoPanel(
+            title = "Domains",
+            body = "Web Dev · App Dev · AI / ML · AR / VR · Cybersecurity · Design. " +
+                "Open the Domains tab to see what each one works on."
+        )
+    }
+
+    item {
+        InfoPanel(
+            title = "How to join",
+            body = "Recruitment opens once a year. Register during the offline drive, " +
+                "clear the aptitude test and the interview, and you're in."
+        )
+    }
+}
+
+// Only collegeEmail is real here; the accordions stay empty until a /me endpoint exists.
+private fun LazyListScope.registeredProfile(
+    collegeEmail: String,
+    expandedSection: ProfileSection?,
+    onAction: (ProfileAction) -> Unit
+) {
+    item {
+        ProfileHero(
+            initials = collegeEmail.toInitials(),
+            name = collegeEmail.substringBefore('@'),
+            subtitle = collegeEmail,
+            roleChip = "Registered",
+            modifier = Modifier.padding(vertical = 6.dp)
+        )
+    }
+
+    item {
+        InfoPanel(
+            title = "Recruitment in progress",
+            body = "Your registration is confirmed. Test and interview details will show up " +
+                "here once they're scheduled."
+        )
+    }
+
+    item {
+        ExpandableRow(
+            title = "Academic Details",
+            subtitle = "Enrollment, branch & semester",
+            isExpanded = expandedSection == ProfileSection.ACADEMIC,
+            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ACADEMIC)) },
+            leading = { IconChip(emoji = "🎓", background = MaterialTheme.colorScheme.primary) }
+        ) {
+            AwaitingDataRow()
+        }
+    }
+
+    item {
+        ExpandableRow(
+            title = "Club Involvement",
+            subtitle = "Role, domains & research",
+            isExpanded = expandedSection == ProfileSection.CLUB,
+            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.CLUB)) },
+            leading = {
+                IconChip(emoji = "🚀", background = MaterialTheme.colorScheme.secondaryContainer)
+            }
+        ) {
+            AwaitingDataRow()
+        }
+    }
+
+    item {
+        ProfileButton(
+            text = "Log Out",
+            isPrimary = false,
+            onClick = { onAction(ProfileAction.OnLogOutClick) },
+            modifier = Modifier.padding(top = 6.dp)
+        )
+    }
+}
+
+@Composable
+private fun LogOutDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Log out?") },
+        text = {
+            Text(text = "You'll go back to browsing as a guest. You can log in again anytime.")
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = "Log Out", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(text = "Cancel") } },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    )
+}
+
+@Composable
+private fun AwaitingDataRow(modifier: Modifier = Modifier) {
+    Text(
+        text = "Awaiting profile data from the club.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.padding(vertical = 6.dp)
+    )
+}
+
+@Composable
+private fun InfoPanel(
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(scheme.surfaceContainerHigh)
+            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(18.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = scheme.onSurface
+        )
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodySmall,
+            color = scheme.onSurfaceVariant
+        )
     }
 }
 
 @Composable
 private fun IconChip(
     emoji: String,
-    background: androidx.compose.ui.graphics.Color,
+    background: Color,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -248,34 +332,36 @@ private fun ProfileButton(
     }
 }
 
-private val previewProfile = StudentProfile(
-    name = "Ayush",
-    initials = "AY",
-    subtitle = "ECE-A · 5th Semester · KIET Group of Institutions",
-    roleChip = "Innogeeks Core Team",
-    domainCount = 2,
-    eventCount = 6,
-    achievementCount = 4,
-    academicDetails = listOf(
-        DetailEntry("Enrollment No.", "202401100700051"),
-        DetailEntry("Branch", "Electronics & Communication Engg."),
-        DetailEntry("Section", "ECE-A"),
-        DetailEntry("Semester", "5th"),
-        DetailEntry("CGPA", "8.0")
-    ),
-    clubDetails = listOf(
-        DetailEntry("Role", "Core Team · Innogeeks"),
-        DetailEntry("Research", "Pressure-measurement device for orthotic design")
-    ),
-    domainBadges = listOf(DomainBadge("Web Dev", 0), DomainBadge("AR / VR", 3))
-)
+// Same stopgap as the Home top bar — the email local-part is the only initials source.
+private fun String.toInitials(): String =
+    substringBefore('@')
+        .split('.', '_', '-')
+        .filter { it.isNotBlank() }
+        .take(2)
+        .map { it.first().uppercaseChar() }
+        .joinToString("")
+        .ifEmpty { "?" }
+
+private val registeredSession = Session.Registered(collegeEmail = "ayush.kumar@kiet.edu")
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenGuestPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(session = Session.Guest),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 820)
 @Composable
-private fun ProfileScreenCollapsedPreview() {
+private fun ProfileScreenRegisteredPreview() {
     InnogeeksTheme {
         ProfileScreen(
-            state = ProfileState(isLoading = false, profile = previewProfile),
+            state = ProfileState(session = registeredSession),
             hazeState = HazeState(),
             onAction = {}
         )
@@ -284,12 +370,11 @@ private fun ProfileScreenCollapsedPreview() {
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
 @Composable
-private fun ProfileScreenAcademicExpandedPreview() {
+private fun ProfileScreenRegisteredExpandedPreview() {
     InnogeeksTheme {
         ProfileScreen(
             state = ProfileState(
-                isLoading = false,
-                profile = previewProfile,
+                session = registeredSession,
                 expandedSection = ProfileSection.ACADEMIC
             ),
             hazeState = HazeState(),
@@ -298,36 +383,12 @@ private fun ProfileScreenAcademicExpandedPreview() {
     }
 }
 
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 820)
 @Composable
-private fun ProfileScreenClubExpandedPreview() {
+private fun ProfileScreenLogOutDialogPreview() {
     InnogeeksTheme {
         ProfileScreen(
-            state = ProfileState(
-                isLoading = false,
-                profile = previewProfile,
-                expandedSection = ProfileSection.CLUB
-            ),
-            hazeState = HazeState(),
-            onAction = {}
-        )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun ProfileScreenLoadingPreview() {
-    InnogeeksTheme {
-        ProfileScreen(state = ProfileState(), hazeState = HazeState(), onAction = {})
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun ProfileScreenErrorPreview() {
-    InnogeeksTheme {
-        ProfileScreen(
-            state = ProfileState(isLoading = false, error = "Failed to load profile."),
+            state = ProfileState(session = registeredSession, isLogOutDialogVisible = true),
             hazeState = HazeState(),
             onAction = {}
         )

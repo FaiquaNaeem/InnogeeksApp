@@ -50,6 +50,7 @@ import com.example.innogeeks.core.presentation.components.AuthGlowBackground
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_domains.presentation.domains.DomainsRoot
 import com.example.innogeeks.feature_events.presentation.events.EventsRoot
+import com.example.innogeeks.feature_profile.presentation.profile.ProfileRoot
 import com.example.innogeeks.feature_home.domain.model.ClubStats
 import com.example.innogeeks.feature_home.presentation.home.HomeRoot
 import com.example.innogeeks.feature_home.presentation.home.HomeScreen
@@ -71,7 +72,7 @@ private val guestTabs = listOf(
 
 @Composable
 fun MainScaffold(
-    homeContent: @Composable (HazeState) -> Unit = { hazeState -> HomeRoot(hazeState = hazeState) }
+    homeContent: (@Composable (HazeState) -> Unit)? = null
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val hazeState = remember { HazeState() }
@@ -81,10 +82,14 @@ fun MainScaffold(
 
         Box(modifier = Modifier.fillMaxSize()) {
             when (selectedTab) {
-                0 -> homeContent(hazeState)
+                // The Home top-bar avatar jumps straight to the Profile tab.
+                0 -> homeContent?.invoke(hazeState) ?: HomeRoot(
+                    hazeState = hazeState,
+                    onNavigateToProfile = { selectedTab = 3 }
+                )
                 1 -> DomainsRoot(hazeState = hazeState)
                 2 -> EventsRoot(hazeState = hazeState)
-                3 -> TabPlaceholder("Profile")
+                3 -> ProfileRoot(hazeState = hazeState)
             }
         }
 
@@ -234,16 +239,6 @@ private fun InnogeeksBottomNav(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun TabPlaceholder(name: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "$name — coming soon")
     }
 }
 

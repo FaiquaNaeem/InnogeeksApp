@@ -59,7 +59,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SplashRoot(
     onNavigateToIntro: () -> Unit,
-    onNavigateToLogin: () -> Unit,
+    onNavigateToHome: () -> Unit,
     viewModel: SplashViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -67,7 +67,7 @@ fun SplashRoot(
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is SplashEvent.NavigateToIntro -> onNavigateToIntro()
-            is SplashEvent.NavigateToLogin -> onNavigateToLogin()
+            is SplashEvent.NavigateToHome -> onNavigateToHome()
         }
     }
 

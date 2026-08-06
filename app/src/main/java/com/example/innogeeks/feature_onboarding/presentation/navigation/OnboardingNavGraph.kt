@@ -5,11 +5,10 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.example.innogeeks.feature_onboarding.presentation.intro.IntroRoot
-import com.example.innogeeks.feature_onboarding.presentation.login.LoginRoot
-import com.example.innogeeks.feature_onboarding.presentation.signup.SignUpRoot
 import com.example.innogeeks.feature_onboarding.presentation.splash.SplashRoot
 
-// Extension on NavGraphBuilder to register onboarding screens.
+// Splash and Intro only. Login now lives in authGraph, and SignUp is unwired: the app has no
+// signup — accounts are created by the backend after offline registration.
 fun NavGraphBuilder.onboardingGraph(
     navController: NavController,
     onNavigateToHome: () -> Unit
@@ -22,38 +21,12 @@ fun NavGraphBuilder.onboardingGraph(
                         popUpTo(SplashRoute) { inclusive = true }
                     }
                 },
-                // Skip intro goes to Home, not Login.
-                onNavigateToLogin = { onNavigateToHome() }
+                onNavigateToHome = onNavigateToHome
             )
         }
 
         composable<IntroRoute> {
-            IntroRoot(
-                // Finishing intro goes to Home.
-                onNavigateToLogin = { onNavigateToHome() }
-            )
-        }
-
-        composable<LoginRoute> {
-            LoginRoot(
-                onNavigateToHome = onNavigateToHome,
-                // Go to signup, remove login from back stack.
-                onNavigateToSignUp = {
-                    navController.navigate(SignUpRoute) {
-                        popUpTo(LoginRoute) { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        composable<SignUpRoute> {
-            SignUpRoot(
-                onNavigateToLogin = {
-                    navController.navigate(LoginRoute) {
-                        popUpTo(SignUpRoute) { inclusive = true }
-                    }
-                }
-            )
+            IntroRoot(onNavigateToHome = onNavigateToHome)
         }
     }
 }

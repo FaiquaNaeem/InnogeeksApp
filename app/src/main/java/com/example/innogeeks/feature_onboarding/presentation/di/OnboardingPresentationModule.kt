@@ -1,9 +1,14 @@
 package com.example.innogeeks.feature_onboarding.presentation
 
+import com.example.innogeeks.feature_onboarding.presentation.auth.emailgate.EmailGateViewModel
+import com.example.innogeeks.feature_onboarding.presentation.auth.passwordlogin.PasswordLoginViewModel
+import com.example.innogeeks.feature_onboarding.presentation.auth.setpassword.SetPasswordViewModel
+import com.example.innogeeks.feature_onboarding.presentation.auth.verifycode.VerifyCodeViewModel
 import com.example.innogeeks.feature_onboarding.presentation.login.LoginViewModel
 import com.example.innogeeks.feature_onboarding.presentation.signup.SignUpViewModel
 import com.example.innogeeks.feature_onboarding.presentation.splash.SplashViewModel
 import com.example.innogeeks.feature_onboarding.presentation.intro.IntroViewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -12,4 +17,22 @@ val onboardingPresentationModule = module {
     viewModelOf(::IntroViewModel)
     viewModelOf(::LoginViewModel)
     viewModelOf(::SignUpViewModel)
+
+    // Auth flow. The three later screens carry the college email (and setup token) forward,
+    // so they take those as runtime parameters instead of resolving them from the graph.
+    viewModelOf(::EmailGateViewModel)
+    viewModel { params ->
+        VerifyCodeViewModel(collegeEmail = params.get(), authFlowRepository = get())
+    }
+    viewModel { params ->
+        SetPasswordViewModel(
+            collegeEmail = params.get(),
+            passwordSetupToken = params.get(),
+            authFlowRepository = get(),
+            authValidator = get()
+        )
+    }
+    viewModel { params ->
+        PasswordLoginViewModel(collegeEmail = params.get(), authFlowRepository = get())
+    }
 }

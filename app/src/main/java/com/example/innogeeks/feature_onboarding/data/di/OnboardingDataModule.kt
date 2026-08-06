@@ -2,6 +2,10 @@ package com.example.innogeeks.feature_onboarding.data.di
 
 import com.example.innogeeks.feature_onboarding.data.InMemoryAuthRepository
 import com.example.innogeeks.feature_onboarding.data.InMemoryRegistrationRepository
+import com.example.innogeeks.feature_onboarding.data.auth.DefaultAuthFlowRepository
+import com.example.innogeeks.feature_onboarding.data.auth.FakeAuthDataSource
+import com.example.innogeeks.feature_onboarding.domain.auth.AuthFlowRepository
+import com.example.innogeeks.feature_onboarding.domain.auth.AuthRemoteDataSource
 import com.example.innogeeks.feature_onboarding.domain.auth.AuthRepository
 import com.example.innogeeks.feature_onboarding.domain.auth.AuthValidator
 import com.example.innogeeks.feature_onboarding.domain.auth.usecase.LoginUseCase
@@ -22,6 +26,10 @@ val onboardingDataModule = module {
     // reuse is mandatory. bind registers each under its INTERFACE, so use cases asking for
     // AuthRepository / RegistrationRepository get the fake — swap to real Ktor here one day.
     singleOf(::InMemoryAuthRepository) bind AuthRepository::class
+
+    // The live auth flow. Swap FakeAuthDataSource -> KtorAuthDataSource(get()) once a host exists.
+    single<AuthRemoteDataSource> { FakeAuthDataSource() }
+    singleOf(::DefaultAuthFlowRepository) bind AuthFlowRepository::class
 
     singleOf(::InMemoryRegistrationRepository) bind RegistrationRepository::class
 

@@ -9,7 +9,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.innogeeks.core.navigation.MainRoute
 import com.example.innogeeks.feature_home.presentation.navigation.homeGraph
+import com.example.innogeeks.feature_onboarding.presentation.navigation.AuthGraphRoute
 import com.example.innogeeks.feature_onboarding.presentation.navigation.OnboardingGraphRoute
+import com.example.innogeeks.feature_onboarding.presentation.navigation.authGraph
 import com.example.innogeeks.feature_onboarding.presentation.navigation.onboardingGraph
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 
@@ -41,7 +43,20 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                     // Registers MainRoute and MainScaffold
-                    homeGraph()
+                    homeGraph(
+                        onNavigateToAuth = { navController.navigate(AuthGraphRoute) }
+                    )
+
+                    authGraph(
+                        navController = navController,
+                        // Pop the whole auth graph so Back never re-enters a finished login.
+                        onAuthenticated = {
+                            navController.popBackStack(AuthGraphRoute, inclusive = true)
+                        },
+                        onDismiss = {
+                            navController.popBackStack(AuthGraphRoute, inclusive = true)
+                        }
+                    )
                 }
             }
         }

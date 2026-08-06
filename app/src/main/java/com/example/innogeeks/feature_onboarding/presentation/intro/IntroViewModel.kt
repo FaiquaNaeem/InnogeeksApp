@@ -2,7 +2,7 @@ package com.example.innogeeks.feature_onboarding.presentation.intro
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.innogeeks.feature_onboarding.domain.auth.AuthRepository
+import com.example.innogeeks.core.domain.session.SessionRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// Injects AuthRepository directly to call markIntroSeen() (trivial pass-through, no use case).
+// Injects SessionRepository directly to call markIntroSeen() (trivial pass-through, no use case).
 class IntroViewModel(
-    private val authRepository: AuthRepository
+    private val sessionRepository: SessionRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(IntroState())
@@ -41,8 +41,8 @@ class IntroViewModel(
 
     private fun finishIntro() {
         viewModelScope.launch {
-            authRepository.markIntroSeen()   // returning users skip the intro next launch
-            _events.send(IntroEvent.NavigateToLogin)
+            sessionRepository.markIntroSeen()   // returning users skip the intro next launch
+            _events.send(IntroEvent.NavigateToHome)
         }
     }
 }

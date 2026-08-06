@@ -46,8 +46,12 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.innogeeks.core.domain.session.Session
 import com.example.innogeeks.core.presentation.components.AuthGlowBackground
 import com.example.innogeeks.core.presentation.components.liquidGlass
+import com.example.innogeeks.feature_domains.presentation.domains.DomainsRoot
+import com.example.innogeeks.feature_events.presentation.events.EventsRoot
+import com.example.innogeeks.feature_profile.presentation.profile.ProfileRoot
 import com.example.innogeeks.feature_home.domain.model.ClubStats
 import com.example.innogeeks.feature_home.presentation.home.HomeRoot
 import com.example.innogeeks.feature_home.presentation.home.HomeScreen
@@ -69,7 +73,9 @@ private val guestTabs = listOf(
 
 @Composable
 fun MainScaffold(
-    homeContent: @Composable (HazeState) -> Unit = { hazeState -> HomeRoot(hazeState = hazeState) }
+    session: Session = Session.Guest,
+    onNavigateToAuth: () -> Unit = {},
+    homeContent: (@Composable (HazeState) -> Unit)? = null
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val hazeState = remember { HazeState() }
@@ -79,10 +85,17 @@ fun MainScaffold(
 
         Box(modifier = Modifier.fillMaxSize()) {
             when (selectedTab) {
-                0 -> homeContent(hazeState)
-                1 -> TabPlaceholder("Domains")
-                2 -> TabPlaceholder("Events")
-                3 -> TabPlaceholder("Profile")
+                // The Home top-bar avatar jumps straight to the Profile tab.
+                0 -> homeContent?.invoke(hazeState) ?: HomeRoot(
+                    hazeState = hazeState,
+                    session = session,
+                    // A guest has no profile to jump to, so the avatar becomes a login tap.
+                    onNavigateToProfile = { selectedTab = 3 },
+                    onNavigateToAuth = onNavigateToAuth
+                )
+                1 -> DomainsRoot(hazeState = hazeState)
+                2 -> EventsRoot(hazeState = hazeState)
+                3 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
             }
         }
 
@@ -235,16 +248,6 @@ private fun InnogeeksBottomNav(
     }
 }
 
-@Composable
-private fun TabPlaceholder(name: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "$name — coming soon")
-    }
-}
-
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun MainScaffoldPreview() {
@@ -254,9 +257,10 @@ private fun MainScaffoldPreview() {
                 HomeScreen(
                     state = HomeState(
                         isLoading = false,
-                        stats = ClubStats(150, 45, 5, 24),
+                        stats = ClubStats(150, 45, 6, 24),
                         domains = emptyList(),
-                        events = emptyList()
+                        tickerRows = listOf(listOf("Technology", "Design")),
+                        cultureMoments = listOf("📡", "🤖", "🏆")
                     ),
                     hazeState = hazeState,
                     onAction = {}

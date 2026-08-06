@@ -25,7 +25,15 @@ class InnogeeksApp : Application(){
                 onboardingPresentationModule,
                 // feature: home
                 com.example.innogeeks.feature_home.data.di.homeDataModule,
-                com.example.innogeeks.feature_home.presentation.di.homePresentationModule
+                com.example.innogeeks.feature_home.presentation.di.homePresentationModule,
+                // feature: domains
+                com.example.innogeeks.feature_domains.data.di.domainsDataModule,
+                com.example.innogeeks.feature_domains.presentation.di.domainsPresentationModule,
+                // feature: events
+                com.example.innogeeks.feature_events.data.di.eventsDataModule,
+                com.example.innogeeks.feature_events.presentation.di.eventsPresentationModule,
+                // feature: profile — no data module; profile content is session-derived only.
+                com.example.innogeeks.feature_profile.presentation.di.profilePresentationModule
             )
         }
     }

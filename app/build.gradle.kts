@@ -1,8 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+}
+
+// BASE_URL comes from local.properties (gitignored) so a real host never needs a commit.
+val baseUrl: String = run {
+    val props = Properties()
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { stream -> props.load(stream) }
+    }
+    props.getProperty("BASE_URL") ?: "https://api.innogeeks.example"
 }
 
 android {
@@ -18,7 +30,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "BASE_URL", "\"https://api.innogeeks.example\"")
+        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -80,7 +92,7 @@ dependencies {
 
     // DataStore — persisted credentials/tokens
     implementation(libs.androidx.datastore.preferences)
-
+git status
     // Navigation + ViewModel in Compose
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

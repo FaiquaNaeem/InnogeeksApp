@@ -1,10 +1,9 @@
 package com.example.innogeeks.feature_home.domain.model
 
-import androidx.compose.ui.graphics.vector.ImageVector
-
+// One slice of the home domain wheel. wheelLabel is the short caps text drawn on the wedge.
 data class DomainPreview(
     val id: String,
     val name: String,
-    val icon: ImageVector,
-    val shortDescription: String
+    val wheelLabel: String,
+    val blurb: String
 )

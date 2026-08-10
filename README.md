@@ -4,7 +4,7 @@ Native Android app for the Innogeeks tech club. It lets anyone browse club conte
 
 ## Demo
 
-<video src="videos/Guest_Demo.mp4" controls width="100%">
+<video src="https://github.com/mahakaal2005/InnogeeksApp/raw/main/videos/Guest_Demo.mp4" controls width="100%">
   Your browser does not support the video tag.
 </video>
 

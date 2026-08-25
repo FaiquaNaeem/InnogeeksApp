@@ -41,8 +41,6 @@ fun AchievementsRow(
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    // Per-card accent, in card order, matching each --accent override in Inno_guest.html's achv-row markup.
-    val accents = listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.secondaryContainer, scheme.onPrimaryContainer)
 
     // IntrinsicSize.Max forces every card to the height of the tallest one, so a two-line label doesn't leave the rest short.
     Row(

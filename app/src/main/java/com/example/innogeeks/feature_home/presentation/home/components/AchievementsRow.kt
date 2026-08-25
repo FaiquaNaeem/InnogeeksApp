@@ -2,16 +2,21 @@ package com.example.innogeeks.feature_home.presentation.home.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,11 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.innogeeks.feature_home.domain.model.Achievement
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import com.example.innogeeks.ui.theme.bodyFontFamily
+import com.example.innogeeks.ui.theme.displayFontFamily
 
 @Composable
 fun AchievementsRow(
@@ -33,24 +41,19 @@ fun AchievementsRow(
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    val accents = listOf(
-        scheme.primary,
-        scheme.secondary,
-        scheme.tertiary,
-        scheme.secondaryContainer,
-        scheme.onPrimaryContainer
-    )
+    // Per-card accent, in card order, matching each --accent override in Inno_guest.html's achv-row markup.
+    val accents = listOf(scheme.primary, scheme.secondary, scheme.tertiary, scheme.secondaryContainer, scheme.onPrimaryContainer)
 
-    LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 4.dp),
+    // IntrinsicSize.Max forces every card to the height of the tallest one, so a two-line label doesn't leave the rest short.
+    Row(
+        modifier = modifier
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp, vertical = 4.dp)
+            .height(IntrinsicSize.Max),
         horizontalArrangement = Arrangement.spacedBy(11.dp)
     ) {
-        itemsIndexed(achievements) { index, achievement ->
-            AchievementCard(
-                achievement = achievement,
-                accent = accents[index % accents.size]
-            )
+        achievements.forEachIndexed { index, achievement ->
+            AchievementCard(achievement = achievement, accent = scheme.primary)
         }
     }
 }
@@ -61,37 +64,53 @@ private fun AchievementCard(
     accent: Color,
     modifier: Modifier = Modifier
 ) {
+    val scheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
-            .width(150.dp)
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+            .width(138.dp)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(20.dp))
+            .background(accent)
     ) {
-        // Accent bar down the left edge.
-        Box(
-            modifier = Modifier
-                .width(4.dp)
-                .fillMaxHeight()
-                .background(accent)
-                .align(Alignment.CenterStart)
-        )
-
+        // border-width: 3px 0 3px 6px in Inno_guest.html — inset the inner surface by that much per side, not evenly, so the accent only shows as a left bar plus thin top/bottom lines.
         Column(
-            modifier = Modifier.padding(start = 20.dp, top = 14.dp, end = 14.dp, bottom = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 6.dp, top = 3.dp, end = 0.dp, bottom = 3.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(scheme.surfaceContainerLowest)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = achievement.emoji, fontSize = 20.sp)
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(accent),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = achievement.emoji, fontSize = 17.sp)
+            }
+            Spacer(modifier = Modifier.height(9.dp))
             Text(
                 text = achievement.stat,
-                style = MaterialTheme.typography.titleMedium,
+                fontFamily = displayFontFamily,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                fontSize = 22.sp,
+                color = scheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.height(5.dp))
             Text(
                 text = achievement.label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontFamily = bodyFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.5.sp,
+                lineHeight = 14.sp,
+                color = scheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -105,7 +124,9 @@ private fun AchievementsRowPreview() {
             achievements = listOf(
                 Achievement("a1", "🏆", "Finalist", "Smart India Hackathon"),
                 Achievement("a2", "🚀", "Nominee", "NASA Space Apps — Global"),
-                Achievement("a3", "🥈", "Top 50", "Flipkart GRiD 5.0")
+                Achievement("a3", "🥈", "Top 50", "Flipkart GRiD 5.0"),
+                Achievement("a4", "🛠️", "50+", "Projects Shipped"),
+                Achievement("a5", "🎓", "40+", "Mentees Guided")
             ),
             modifier = Modifier.padding(vertical = 16.dp)
         )

@@ -58,6 +58,9 @@ dependencies {
     implementation(libs.haze.blur)
     implementation(libs.haze.blur.materials)
 
+    // Lottie — circles.json animated background on the domain collapsed cards
+    implementation(libs.lottie.compose)
+
     // Koin — dependency injection
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)

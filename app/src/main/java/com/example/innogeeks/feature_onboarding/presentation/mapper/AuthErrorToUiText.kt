@@ -22,5 +22,10 @@ fun AuthApiError.toUiText(): UiText = when (this) {
     AuthApiError.PASSWORD_SETUP_NOT_ALLOWED -> UiText.StringResource(R.string.error_password_setup_not_allowed)
     AuthApiError.EMAIL_QUEUE_UNAVAILABLE -> UiText.StringResource(R.string.error_email_queue_unavailable)
     AuthApiError.INVALID_CREDENTIALS -> UiText.StringResource(R.string.error_invalid_credentials)
+    AuthApiError.PASSWORD_NOT_SET -> UiText.StringResource(R.string.error_password_not_set)
+    AuthApiError.PASSWORD_RESET_COOLDOWN -> UiText.StringResource(R.string.error_password_reset_cooldown)
+    AuthApiError.PASSWORD_RESET_CODE_INVALID -> UiText.StringResource(R.string.error_password_reset_code_invalid)
+    AuthApiError.PASSWORD_RESET_TOKEN_INVALID -> UiText.StringResource(R.string.error_password_reset_token_invalid)
+    AuthApiError.UNAUTHORIZED -> UiText.StringResource(R.string.error_unauthorized)
     AuthApiError.UNSUPPORTED -> UiText.StringResource(R.string.error_unsupported_version)
 }

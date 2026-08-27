@@ -27,6 +27,7 @@ import org.koin.core.parameter.parametersOf
 fun PasswordLoginRoot(
     collegeEmail: String,
     onNavigateToHome: () -> Unit,
+    onNavigateToPasswordReset: () -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: PasswordLoginViewModel = koinViewModel { parametersOf(collegeEmail) }
 ) {
@@ -35,6 +36,7 @@ fun PasswordLoginRoot(
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is PasswordLoginEvent.NavigateToHome -> onNavigateToHome()
+            is PasswordLoginEvent.NavigateToPasswordReset -> onNavigateToPasswordReset()
             is PasswordLoginEvent.NavigateBack -> onNavigateBack()
         }
     }
@@ -71,7 +73,19 @@ fun PasswordLoginScreen(
             enabled = !state.isSubmitting
         )
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
+
+        TextButton(
+            onClick = { onAction(PasswordLoginAction.OnForgotPasswordClick) },
+            enabled = !state.isSubmitting
+        ) {
+            Text(
+                text = "Forgot password?",
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
+
+        Spacer(Modifier.height(4.dp))
 
         AuthFormError(state.formError)
 

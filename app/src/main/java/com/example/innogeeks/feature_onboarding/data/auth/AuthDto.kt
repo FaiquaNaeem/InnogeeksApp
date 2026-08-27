@@ -35,3 +35,26 @@ data class LoginRequest(val collegeEmail: String, val password: String)
 
 @Serializable
 data class LoginResponse(val accessToken: String)
+
+// Password reset flow (§10)
+@Serializable
+data class PasswordResetRequestRequest(val collegeEmail: String)
+
+@Serializable
+data class PasswordResetRequestResponse(val requested: Boolean)
+
+@Serializable
+data class PasswordResetVerifyRequest(val collegeEmail: String, val code: String)
+
+@Serializable
+data class PasswordResetVerifyResponse(val passwordResetToken: String)
+
+@Serializable
+data class PasswordResetCompleteRequest(val passwordResetToken: String, val password: String)
+
+@Serializable
+data class PasswordResetCompleteResponse(val accessToken: String)
+
+// Logout (§11) - no request body, empty response
+@Serializable
+data class LogoutResponse(val success: Boolean = true)

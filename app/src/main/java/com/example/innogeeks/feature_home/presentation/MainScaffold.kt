@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,13 +19,16 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -52,22 +56,42 @@ import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_domains.presentation.domains.DomainsRoot
 import com.example.innogeeks.feature_events.presentation.events.EventsRoot
 import com.example.innogeeks.feature_profile.presentation.profile.ProfileRoot
+import com.example.innogeeks.feature_recruitment.presentation.tracker.TrackerRoot
 import com.example.innogeeks.feature_home.domain.model.ClubStats
 import com.example.innogeeks.feature_home.presentation.home.HomeRoot
 import com.example.innogeeks.feature_home.presentation.home.HomeScreen
 import com.example.innogeeks.feature_home.presentation.home.HomeState
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 
 private data class BottomNavTab(
     val label: String,
     val icon: ImageVector,
 )
 
+// Guest: 4 tabs (Home/Domains/Events/Profile)
 private val guestTabs = listOf(
     BottomNavTab("Home", Icons.Filled.Home),
     BottomNavTab("Domains", Icons.Filled.Category),
     BottomNavTab("Events", Icons.Filled.CalendarMonth),
+    BottomNavTab("Profile", Icons.Filled.Person),
+)
+
+// Registered (first-year): 5 tabs (Tracker/Domains/Resources/Events/Profile)
+private val registeredTabs = listOf(
+    BottomNavTab("Tracker", Icons.Filled.Timeline),
+    BottomNavTab("Domains", Icons.Filled.Category),
+    BottomNavTab("Resources", Icons.Filled.FolderOpen),
+    BottomNavTab("Events", Icons.Filled.CalendarMonth),
+    BottomNavTab("Profile", Icons.Filled.Person),
+)
+
+// Member/Coordinator: 4 tabs (Home/Attendance/Resources/Profile)
+private val memberTabs = listOf(
+    BottomNavTab("Home", Icons.Filled.Home),
+    BottomNavTab("Attendance", Icons.Filled.CalendarMonth),
+    BottomNavTab("Resources", Icons.Filled.FolderOpen),
     BottomNavTab("Profile", Icons.Filled.Person),
 )
 
@@ -80,28 +104,47 @@ fun MainScaffold(
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val hazeState = remember { HazeState() }
 
+    // Determine tab layout based on session
+    val tabs = when (session) {
+        Session.Guest -> guestTabs
+        is Session.Registered -> registeredTabs // first-year students
+        // TODO: When backend fixes role field, check session.role for MEMBER/COORDINATOR
+        // For now, all Registered users get registeredTabs until we have actual role data
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         AuthGlowBackground(hazeState = hazeState)
 
         Box(modifier = Modifier.fillMaxSize()) {
-            when (selectedTab) {
-                // The Home top-bar avatar jumps straight to the Profile tab.
-                0 -> homeContent?.invoke(hazeState) ?: HomeRoot(
-                    hazeState = hazeState,
-                    session = session,
-                    // A guest has no profile to jump to, so the avatar becomes a login tap.
-                    onNavigateToProfile = { selectedTab = 3 },
-                    onNavigateToAuth = onNavigateToAuth
-                )
-                1 -> DomainsRoot(hazeState = hazeState)
-                2 -> EventsRoot(hazeState = hazeState)
-                3 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
+            when (session) {
+                Session.Guest -> {
+                    when (selectedTab) {
+                        0 -> homeContent?.invoke(hazeState) ?: HomeRoot(
+                            hazeState = hazeState,
+                            session = session,
+                            onNavigateToProfile = { selectedTab = 3 },
+                            onNavigateToAuth = onNavigateToAuth
+                        )
+                        1 -> DomainsRoot(hazeState = hazeState)
+                        2 -> EventsRoot(hazeState = hazeState)
+                        3 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
+                    }
+                }
+                is Session.Registered -> {
+                    when (selectedTab) {
+                        0 -> TrackerRoot(hazeState = hazeState)
+                        1 -> DomainsRoot(hazeState = hazeState)
+                        2 -> PlaceholderScreen(title = "Resources", hazeState = hazeState)
+                        3 -> EventsRoot(hazeState = hazeState)
+                        4 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
+                    }
+                }
             }
         }
 
         // Floating Glassmorphic Bottom Navigation Bar
         InnogeeksBottomNav(
-            tabs = guestTabs,
+            tabs = tabs,
             selectedTab = selectedTab,
             onTabSelected = { selectedTab = it },
             hazeState = hazeState,
@@ -244,6 +287,40 @@ private fun InnogeeksBottomNav(
                     }
                 }
             }
+        }
+    }
+}
+
+// Placeholder for Phase 2 screens (Attendance, Resources)
+@Composable
+private fun PlaceholderScreen(
+    title: String,
+    hazeState: HazeState,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .hazeSource(hazeState)
+            .padding(18.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Coming in Phase 2",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

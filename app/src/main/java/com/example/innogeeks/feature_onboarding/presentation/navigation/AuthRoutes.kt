@@ -18,3 +18,13 @@ data class SetPasswordRoute(val collegeEmail: String, val passwordSetupToken: St
 
 @Serializable
 data class PasswordLoginRoute(val collegeEmail: String)
+
+// Password reset flow routes (§10)
+@Serializable
+data object PasswordResetRequestRoute
+
+@Serializable
+data class PasswordResetVerifyCodeRoute(val collegeEmail: String)
+
+@Serializable
+data class PasswordResetCompleteRoute(val collegeEmail: String, val passwordResetToken: String)

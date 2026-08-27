@@ -19,4 +19,14 @@ interface AuthRemoteDataSource {
     suspend fun setPassword(passwordSetupToken: String, password: String): Result<String, AuthError>
 
     suspend fun login(collegeEmail: String, password: String): Result<String, AuthError>
+
+    // Password reset flow (§10) - mirrors first-login verification
+    suspend fun requestPasswordResetCode(collegeEmail: String): Result<Unit, AuthError>
+
+    suspend fun verifyResetCode(collegeEmail: String, code: String): Result<String, AuthError>
+
+    suspend fun completePasswordReset(passwordResetToken: String, password: String): Result<String, AuthError>
+
+    // Logout (§11) - requires bearer token, revokes it server-side
+    suspend fun logout(): Result<Unit, AuthError>
 }

@@ -54,6 +54,36 @@ class KtorAuthDataSource(private val httpClient: HttpClient) : AuthRemoteDataSou
             route = "/auth/login",
             body = LoginRequest(collegeEmail = collegeEmail, password = password)
         ).mapData { it.accessToken }.mapError { it.toAuthError() }
+
+    override suspend fun requestPasswordResetCode(collegeEmail: String): Result<Unit, AuthError> =
+        httpClient.postEnveloped<PasswordResetRequestRequest, PasswordResetRequestResponse>(
+            route = "/auth/password-reset/request",
+            body = PasswordResetRequestRequest(collegeEmail = collegeEmail)
+        ).asEmptyResult().mapError { it.toAuthError() }
+
+    override suspend fun verifyResetCode(
+        collegeEmail: String,
+        code: String
+    ): Result<String, AuthError> =
+        httpClient.postEnveloped<PasswordResetVerifyRequest, PasswordResetVerifyResponse>(
+            route = "/auth/password-reset/verify",
+            body = PasswordResetVerifyRequest(collegeEmail = collegeEmail, code = code)
+        ).mapData { it.passwordResetToken }.mapError { it.toAuthError() }
+
+    override suspend fun completePasswordReset(
+        passwordResetToken: String,
+        password: String
+    ): Result<String, AuthError> =
+        httpClient.postEnveloped<PasswordResetCompleteRequest, PasswordResetCompleteResponse>(
+            route = "/auth/password-reset/complete",
+            body = PasswordResetCompleteRequest(passwordResetToken = passwordResetToken, password = password)
+        ).mapData { it.accessToken }.mapError { it.toAuthError() }
+
+    override suspend fun logout(): Result<Unit, AuthError> =
+        httpClient.postEnveloped<Unit, LogoutResponse>(
+            route = "/auth/logout",
+            body = Unit
+        ).asEmptyResult().mapError { it.toAuthError() }
 }
 
 // An unrecognised nextStep is a version mismatch, not a default — §9.

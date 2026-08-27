@@ -39,6 +39,10 @@ class PasswordLoginViewModel(
 
             is PasswordLoginAction.OnLoginClick -> login()
 
+            is PasswordLoginAction.OnForgotPasswordClick -> viewModelScope.launch {
+                _events.send(PasswordLoginEvent.NavigateToPasswordReset)
+            }
+
             is PasswordLoginAction.OnBackClick -> viewModelScope.launch {
                 _events.send(PasswordLoginEvent.NavigateBack)
             }

@@ -2,8 +2,20 @@ package com.example.innogeeks
 
 import android.app.Application
 import com.example.innogeeks.core.data.di.coreDataModule
+import com.example.innogeeks.feature_domains.data.di.domainsDataModule
+import com.example.innogeeks.feature_domains.presentation.di.domainsPresentationModule
+import com.example.innogeeks.feature_events.data.di.eventsDataModule
+import com.example.innogeeks.feature_events.presentation.di.eventsPresentationModule
+import com.example.innogeeks.feature_home.data.di.homeDataModule
+import com.example.innogeeks.feature_home.presentation.di.homePresentationModule
 import com.example.innogeeks.feature_onboarding.data.di.onboardingDataModule
 import com.example.innogeeks.feature_onboarding.presentation.onboardingPresentationModule
+import com.example.innogeeks.feature_profile.data.di.profileDataModule
+import com.example.innogeeks.feature_profile.domain.di.profileDomainModule
+import com.example.innogeeks.feature_profile.presentation.di.profilePresentationModule
+import com.example.innogeeks.feature_recruitment.data.di.recruitmentDataModule
+import com.example.innogeeks.feature_recruitment.domain.di.recruitmentDomainModule
+import com.example.innogeeks.feature_recruitment.presentation.di.recruitmentPresentationModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -24,16 +36,22 @@ class InnogeeksApp : Application(){
                 onboardingDataModule,
                 onboardingPresentationModule,
                 // feature: home
-                com.example.innogeeks.feature_home.data.di.homeDataModule,
-                com.example.innogeeks.feature_home.presentation.di.homePresentationModule,
+                homeDataModule,
+                homePresentationModule,
                 // feature: domains
-                com.example.innogeeks.feature_domains.data.di.domainsDataModule,
-                com.example.innogeeks.feature_domains.presentation.di.domainsPresentationModule,
+                domainsDataModule,
+                domainsPresentationModule,
                 // feature: events
-                com.example.innogeeks.feature_events.data.di.eventsDataModule,
-                com.example.innogeeks.feature_events.presentation.di.eventsPresentationModule,
-                // feature: profile — no data module; profile content is session-derived only.
-                com.example.innogeeks.feature_profile.presentation.di.profilePresentationModule
+                eventsDataModule,
+                eventsPresentationModule,
+                // feature: profile
+                profileDataModule,
+                profileDomainModule,
+                profilePresentationModule,
+                // feature: recruitment
+                recruitmentDataModule,
+                recruitmentDomainModule,
+                recruitmentPresentationModule
             )
         }
     }

@@ -1,7 +1,6 @@
 package com.example.innogeeks.feature_events.presentation.events.components
 
 import android.content.res.Configuration
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -12,9 +11,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,102 +25,121 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import kotlinx.coroutines.delay
 
-// Square day/month badge used as the leading slot of every event row.
+// Diagonal-hatch placeholder for the real event image/logo, which no content
+// endpoint provides yet (display-only screen, see APP_API_GAPS_RESOLVED.md §6).
 @Composable
-fun EventDateBadge(
-    day: String,
-    month: String,
-    modifier: Modifier = Modifier
+fun EventImagePlaceholder(
+    modifier: Modifier = Modifier,
+    height: Dp = 120.dp
 ) {
-    Column(
+    val scheme = MaterialTheme.colorScheme
+    Box(
         modifier = modifier
-            .width(44.dp)
-            .clip(RoundedCornerShape(11.dp))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                RoundedCornerShape(11.dp)
-            )
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxWidth()
+            .height(height)
+            .clip(RoundedCornerShape(14.dp))
+            .background(scheme.surfaceContainerHigh)
+            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(14.dp))
+            .drawWithContent {
+                drawContent()
+                val stripeColor = scheme.outlineVariant.copy(alpha = 0.5f)
+                val gap = 16.dp.toPx()
+                var x = -size.height
+                while (x < size.width) {
+                    drawLine(
+                        color = stripeColor,
+                        start = Offset(x, size.height),
+                        end = Offset(x + size.height, 0f),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                    x += gap
+                }
+            },
+        contentAlignment = Alignment.Center
     ) {
         Text(
-            text = day,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Text(
-            text = month,
-            fontSize = 9.sp,
-            letterSpacing = 1.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "event image / logo",
+            style = MaterialTheme.typography.labelSmall,
+            color = scheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
     }
 }
 
-// Toggles between Register and a confirmed state. Local-only for now.
+// Static pill button, no toggle state — this screen is display-only.
 @Composable
-fun RegisterButton(
-    isRegistered: Boolean,
+private fun LearnMoreButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val background by animateColorAsState(
-        targetValue = if (isRegistered) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-        } else {
-            MaterialTheme.colorScheme.primary
-        },
-        animationSpec = tween(260),
-        label = "registerBg"
-    )
-    val contentColor by animateColorAsState(
-        targetValue = if (isRegistered) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onPrimary
-        },
-        animationSpec = tween(260),
-        label = "registerFg"
-    )
-
+    val scheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(percent = 50))
-            .background(background)
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                RoundedCornerShape(percent = 50)
-            )
+            .background(scheme.surfaceContainer)
+            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (isRegistered) "✓ Registered" else "Register",
+            text = "Learn more",
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
-            color = contentColor
+            color = scheme.onSurface
         )
     }
 }
 
-// Four emoji cells that pop in one after another when a past event expands.
+// Image + title + 2-line blurb + Learn more, for both upcoming and past events.
+@Composable
+fun EventCard(
+    title: String,
+    blurb: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(scheme.surfaceContainerHigh)
+            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(18.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        EventImagePlaceholder()
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = scheme.onSurface
+        )
+        Text(
+            text = blurb,
+            style = MaterialTheme.typography.bodySmall,
+            color = scheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        LearnMoreButton(onClick = onClick)
+    }
+}
+
+// Four emoji cells that pop in one after another on a past event's detail page.
 @Composable
 fun EventPhotoRow(
     modifier: Modifier = Modifier
@@ -182,14 +199,12 @@ private fun EventComponentsPreview() {
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                EventDateBadge(day = "14", month = "AUG")
-                EventDateBadge(day = "05", month = "SEP")
-            }
-            RegisterButton(isRegistered = false, onClick = {})
-            RegisterButton(isRegistered = true, onClick = {})
+            EventCard(
+                title = "Hack The Campus 3.0",
+                blurb = "A 24-hour campus-wide hackathon open to all branches.",
+                onClick = {}
+            )
             EventPhotoRow()
-            Box(modifier = Modifier.size(1.dp))
         }
     }
 }

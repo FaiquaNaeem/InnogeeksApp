@@ -40,25 +40,18 @@ class EventsViewModel(
 
     fun onAction(action: EventsAction) {
         when (action) {
-            // Switching tabs closes whatever was open, since that row is no longer visible.
+            // Switching tabs closes whatever detail page was open, since that event is no
+            // longer in the visible list.
             is EventsAction.OnTabSelected -> _state.update {
-                it.copy(selectedTab = action.tab, expandedEventId = null)
+                it.copy(selectedTab = action.tab, selectedEventId = null)
             }
 
-            is EventsAction.OnEventToggled -> _state.update {
-                it.copy(
-                    expandedEventId = if (it.expandedEventId == action.eventId) {
-                        null
-                    } else {
-                        action.eventId
-                    }
-                )
+            is EventsAction.OnEventClick -> _state.update {
+                it.copy(selectedEventId = action.eventId)
             }
 
-            is EventsAction.OnRegisterClick -> _state.update {
-                val updated = it.registeredEventIds.toMutableSet()
-                if (!updated.add(action.eventId)) updated.remove(action.eventId)
-                it.copy(registeredEventIds = updated)
+            EventsAction.OnBackFromDetail -> _state.update {
+                it.copy(selectedEventId = null)
             }
 
             EventsAction.OnRetry -> loadEvents()

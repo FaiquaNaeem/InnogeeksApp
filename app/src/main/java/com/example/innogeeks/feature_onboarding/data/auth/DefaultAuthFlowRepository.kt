@@ -47,4 +47,33 @@ class DefaultAuthFlowRepository(
         }
         return result.asEmptyResult()
     }
+
+    override suspend fun requestPasswordResetCode(collegeEmail: String): EmptyResult<AuthError> =
+        remote.requestPasswordResetCode(collegeEmail.trim())
+
+    override suspend fun verifyResetCode(
+        collegeEmail: String,
+        code: String
+    ): Result<String, AuthError> = remote.verifyResetCode(collegeEmail.trim(), code)
+
+    override suspend fun completePasswordReset(
+        collegeEmail: String,
+        passwordResetToken: String,
+        password: String
+    ): EmptyResult<AuthError> {
+        val email = collegeEmail.trim()
+        val result = remote.completePasswordReset(passwordResetToken, password)
+        if (result is Result.Success) {
+            sessionRepository.signIn(accessToken = result.data, collegeEmail = email)
+        }
+        return result.asEmptyResult()
+    }
+
+    override suspend fun logout(): EmptyResult<AuthError> {
+        val result = remote.logout()
+        if (result is Result.Success) {
+            sessionRepository.signOut()
+        }
+        return result
+    }
 }

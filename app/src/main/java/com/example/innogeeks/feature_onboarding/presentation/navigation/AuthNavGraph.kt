@@ -7,6 +7,9 @@ import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.example.innogeeks.feature_onboarding.presentation.auth.emailgate.EmailGateRoot
 import com.example.innogeeks.feature_onboarding.presentation.auth.passwordlogin.PasswordLoginRoot
+import com.example.innogeeks.feature_onboarding.presentation.auth.passwordreset.PasswordResetCompleteRoot
+import com.example.innogeeks.feature_onboarding.presentation.auth.passwordreset.PasswordResetRequestRoot
+import com.example.innogeeks.feature_onboarding.presentation.auth.passwordreset.PasswordResetVerifyCodeRoot
 import com.example.innogeeks.feature_onboarding.presentation.auth.setpassword.SetPasswordRoot
 import com.example.innogeeks.feature_onboarding.presentation.auth.verifycode.VerifyCodeRoot
 
@@ -69,7 +72,44 @@ fun NavGraphBuilder.authGraph(
             PasswordLoginRoot(
                 collegeEmail = route.collegeEmail,
                 onNavigateToHome = onAuthenticated,
+                onNavigateToPasswordReset = {
+                    navController.navigate(PasswordResetRequestRoute)
+                },
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<PasswordResetRequestRoute> {
+            PasswordResetRequestRoot(
+                onNavigateToVerifyResetCode = { email ->
+                    navController.navigate(PasswordResetVerifyCodeRoute(collegeEmail = email))
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<PasswordResetVerifyCodeRoute> { entry ->
+            val route = entry.toRoute<PasswordResetVerifyCodeRoute>()
+            PasswordResetVerifyCodeRoot(
+                collegeEmail = route.collegeEmail,
+                onNavigateToCompleteReset = { email, token ->
+                    navController.navigate(
+                        PasswordResetCompleteRoute(
+                            collegeEmail = email,
+                            passwordResetToken = token
+                        )
+                    )
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<PasswordResetCompleteRoute> { entry ->
+            val route = entry.toRoute<PasswordResetCompleteRoute>()
+            PasswordResetCompleteRoot(
+                collegeEmail = route.collegeEmail,
+                passwordResetToken = route.passwordResetToken,
+                onNavigateToHome = onAuthenticated
             )
         }
     }

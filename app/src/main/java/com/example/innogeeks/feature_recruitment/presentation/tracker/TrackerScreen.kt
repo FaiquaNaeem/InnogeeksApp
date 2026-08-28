@@ -12,14 +12,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -94,25 +92,27 @@ fun TrackerScreen(
 ) {
     val scheme = MaterialTheme.colorScheme
 
-    LazyColumn(
+    // A plain Column, not LazyColumn: this screen's content is a handful of fixed blocks, never
+    // a long list, and the journey below needs Modifier.weight(1f) to fill the remaining screen
+    // height (LazyColumn items can't do that — they size to content, leaving empty space below
+    // on taller phones, which is what the original stacked-box layout also did unnoticed).
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .hazeSource(hazeState),
-        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 110.dp),
+            .hazeSource(hazeState)
+            .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 110.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            Text(
-                text = "Recruitment Tracker",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = scheme.onSurface
-            )
-        }
+        Text(
+            text = "Recruitment Tracker",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = scheme.onSurface
+        )
 
         when {
-            state.isLoading -> item {
+            state.isLoading -> {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -123,7 +123,7 @@ fun TrackerScreen(
                 }
             }
 
-            state.error != null -> item {
+            state.error != null -> {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -144,32 +144,28 @@ fun TrackerScreen(
             state.recruitmentStatus != null -> {
                 val stages = state.recruitmentStatus.toJourneyStages()
 
-                item {
-                    Text(
-                        text = state.recruitmentStatus.statusLine(stages),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = state.recruitmentStatus.statusLine(stages),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant
+                )
 
-                item {
-                    JourneyStages(stages = stages, hazeState = hazeState)
-                }
+                JourneyStages(
+                    stages = stages,
+                    hazeState = hazeState,
+                    modifier = Modifier.weight(1f)
+                )
 
                 if (state.recruitmentStatus.decisionNote != null) {
-                    item {
-                        DecisionNoteCard(note = state.recruitmentStatus.decisionNote)
-                    }
+                    DecisionNoteCard(note = state.recruitmentStatus.decisionNote)
                 }
 
                 val decision = state.recruitmentStatus.decision
                 if (decision == Decision.REJECTED || decision == Decision.WAITLISTED) {
-                    item {
-                        NonSelectionCard(
-                            decision = decision,
-                            onBrowseResourcesClick = { onAction(TrackerAction.OnBrowseResourcesClick) }
-                        )
-                    }
+                    NonSelectionCard(
+                        decision = decision,
+                        onBrowseResourcesClick = { onAction(TrackerAction.OnBrowseResourcesClick) }
+                    )
                 }
             }
         }
@@ -294,7 +290,10 @@ private fun JourneyStages(
             }
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
             stages.forEachIndexed { index, stage ->
                 JourneyStageRow(
                     stage = stage,

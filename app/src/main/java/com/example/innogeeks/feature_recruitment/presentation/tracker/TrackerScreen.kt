@@ -507,7 +507,7 @@ private fun formatDateTime(isoString: String): String {
     return try {
         val localDateTime = Instant.parse(isoString).toLocalDateTime(TimeZone.currentSystemDefault())
         trackerDateTimeFormat.format(localDateTime)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         isoString // fallback to raw string if parsing fails
     }
 }

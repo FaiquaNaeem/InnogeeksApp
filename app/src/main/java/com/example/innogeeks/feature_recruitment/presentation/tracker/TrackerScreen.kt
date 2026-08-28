@@ -1,6 +1,12 @@
 package com.example.innogeeks.feature_recruitment.presentation.tracker
 
 import android.content.res.Configuration
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -14,12 +20,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.HourglassTop
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,15 +35,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_recruitment.domain.model.Decision
 import com.example.innogeeks.feature_recruitment.domain.model.RecruitmentStatus
 import com.example.innogeeks.feature_recruitment.domain.model.TestSlot
@@ -129,8 +142,18 @@ fun TrackerScreen(
             }
 
             state.recruitmentStatus != null -> {
+                val stages = state.recruitmentStatus.toJourneyStages()
+
                 item {
-                    RecruitmentProgressCard(status = state.recruitmentStatus)
+                    Text(
+                        text = state.recruitmentStatus.statusLine(stages),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurfaceVariant
+                    )
+                }
+
+                item {
+                    JourneyStages(stages = stages, hazeState = hazeState)
                 }
 
                 if (state.recruitmentStatus.decisionNote != null) {
@@ -153,104 +176,217 @@ fun TrackerScreen(
     }
 }
 
+// One node in the recruitment journey. `decision` is non-null only for the final Decision stage
+// and drives its icon/color independent of the generic DONE/CURRENT/PENDING state below.
+private enum class StageState { DONE, CURRENT, PENDING }
+
+private data class JourneyStageUi(
+    val title: String,
+    val subtitle: String,
+    val state: StageState,
+    val decision: Decision? = null
+)
+
+// Interview has no backend field yet (TODO(phase2)), so it can only be inferred "done" once a
+// decision exists at all — the app has no other signal that the interview happened.
+private fun RecruitmentStatus.toJourneyStages(): List<JourneyStageUi> {
+    val afterDecision = decision != Decision.PENDING
+
+    val stages = mutableListOf(
+        JourneyStageUi(
+            title = "Registered",
+            subtitle = "Application submitted",
+            state = StageState.DONE
+        ),
+        JourneyStageUi(
+            title = "Fee Paid",
+            subtitle = if (paid) "₹50 payment verified" else "Payment pending",
+            state = if (paid) StageState.DONE else StageState.PENDING
+        ),
+        JourneyStageUi(
+            title = "Aptitude Test",
+            subtitle = when {
+                afterDecision -> testSlot.startTime?.let { "Completed ${formatDateTime(it)}" } ?: "Completed"
+                testSlot.booked -> "Slot booked: ${testSlot.startTime?.let { formatDateTime(it) } ?: "TBD"}"
+                else -> "Test slot not booked yet"
+            },
+            state = if (afterDecision) StageState.DONE else StageState.PENDING
+        ),
+        JourneyStageUi(
+            title = "Interview",
+            subtitle = if (afterDecision) "Completed" else "Scheduled after your test",
+            state = if (afterDecision) StageState.DONE else StageState.PENDING
+        )
+    )
+
+    val (decisionTitle, decisionSubtitle) = when (decision) {
+        Decision.SELECTED -> "Selected" to "Congratulations! You're now a member."
+        Decision.WAITLISTED -> "Waitlisted" to "You're on the waitlist. We'll notify you."
+        Decision.REJECTED -> "Not selected" to "Thank you for applying. Keep building!"
+        Decision.PENDING -> "Decision" to "Awaiting result"
+    }
+    stages += JourneyStageUi(
+        title = decisionTitle,
+        subtitle = decisionSubtitle,
+        state = if (decision == Decision.SELECTED) StageState.DONE else StageState.PENDING,
+        decision = decision
+    )
+
+    // The first unsettled stage in sequence is where the student's attention belongs right now.
+    val currentIndex = stages.indexOfFirst { it.state == StageState.PENDING }
+    return if (currentIndex >= 0) {
+        stages.mapIndexed { index, stage ->
+            if (index == currentIndex) stage.copy(state = StageState.CURRENT) else stage
+        }
+    } else {
+        stages
+    }
+}
+
+private fun RecruitmentStatus.statusLine(stages: List<JourneyStageUi>): String {
+    val current = stages.firstOrNull { it.state == StageState.CURRENT }
+    return when {
+        decision == Decision.SELECTED -> "You're all set. Welcome to Innogeeks!"
+        current != null -> "You're on track. Next up: ${current.title}."
+        else -> "Here's where things stand."
+    }
+}
+
+private val nodeAnchorSize = 24.dp
+
+// A single vertical route through the recruitment stages. The connector line is drawn from each
+// node's real measured position (onGloballyPositioned), never guessed coordinates, so it cannot
+// misalign with the rows the way a hand-authored path could.
 @Composable
-private fun RecruitmentProgressCard(
-    status: RecruitmentStatus,
+private fun JourneyStages(
+    stages: List<JourneyStageUi>,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
+    val nodeCenters = remember { mutableStateMapOf<Int, Float>() }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(scheme.surfaceContainerHigh)
-            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(18.dp))
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        // Stage 1: Registered (always complete)
-        StageRow(
-            title = "Registered",
-            subtitle = "Application submitted",
-            isComplete = true
-        )
+    Box(modifier = modifier.fillMaxWidth()) {
+        val lastSettledIndex = stages.indexOfLast { it.state != StageState.PENDING }
+        val startY = nodeCenters[0]
+        val doneY = nodeCenters[lastSettledIndex.coerceAtLeast(0)]
 
-        // Stage 2: Fee Paid
-        StageRow(
-            title = "Fee Paid",
-            subtitle = if (status.paid) "₹50 payment verified" else "Payment pending",
-            isComplete = status.paid
-        )
-
-        // Stage 3: Test Slot
-        val testSubtitle = when {
-            status.testSlot.booked -> {
-                val start = status.testSlot.startTime?.let { formatDateTime(it) } ?: "TBD"
-                "Slot booked: $start"
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val x = nodeAnchorSize.toPx() / 2
+            val endY = nodeCenters[stages.lastIndex]
+            if (startY != null && endY != null) {
+                drawLine(
+                    color = scheme.outlineVariant,
+                    start = Offset(x, startY),
+                    end = Offset(x, endY),
+                    strokeWidth = 2.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
             }
-            else -> "Test slot not booked yet"
+            if (startY != null && doneY != null && doneY > startY) {
+                drawLine(
+                    color = scheme.primary,
+                    start = Offset(x, startY),
+                    end = Offset(x, doneY),
+                    strokeWidth = 2.dp.toPx(),
+                    cap = StrokeCap.Round
+                )
+            }
         }
-        StageRow(
-            title = "Aptitude Test",
-            subtitle = testSubtitle,
-            isComplete = status.testSlot.booked
-        )
 
-        // TODO(phase2): wire Interview stage once interview scheduling API exists
-        StageRow(
-            title = "Interview",
-            subtitle = "Pending",
-            isComplete = false
-        )
-
-        // Stage 5: Decision
-        val (decisionTitle, decisionSubtitle) = when (status.decision) {
-            Decision.SELECTED -> "Selected" to "Congratulations! You're now a member."
-            Decision.WAITLISTED -> "Waitlisted" to "You're on the waitlist. We'll notify you."
-            Decision.REJECTED -> "Decision: Not selected" to "Thank you for applying. Keep building!"
-            Decision.PENDING -> "Decision" to "Results pending"
+        Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
+            stages.forEachIndexed { index, stage ->
+                JourneyStageRow(
+                    stage = stage,
+                    hazeState = hazeState,
+                    modifier = Modifier.onGloballyPositioned { coordinates ->
+                        val bounds = coordinates.boundsInParent()
+                        nodeCenters[index] = bounds.top + bounds.height / 2f
+                    }
+                )
+            }
         }
-        StageRow(
-            title = decisionTitle,
-            subtitle = decisionSubtitle,
-            isComplete = status.decision == Decision.SELECTED
-        )
     }
 }
 
 @Composable
-private fun StageRow(
-    title: String,
-    subtitle: String,
-    isComplete: Boolean,
+private fun JourneyStageRow(
+    stage: JourneyStageUi,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
+    val isCurrent = stage.state == StageState.CURRENT
+    val isDone = stage.state == StageState.DONE
+
+    val dotColor = when {
+        stage.decision == Decision.REJECTED -> scheme.outline
+        stage.decision == Decision.WAITLISTED -> scheme.secondary
+        isDone || isCurrent -> scheme.primary
+        else -> scheme.outlineVariant
+    }
 
     Row(
         modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Icon(
-            imageVector = if (isComplete) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-            contentDescription = null,
-            tint = if (isComplete) scheme.primary else scheme.outlineVariant,
-            modifier = Modifier.size(28.dp)
-        )
+        Box(modifier = Modifier.size(nodeAnchorSize), contentAlignment = Alignment.Center) {
+            // The pulsing ring signals "in progress" — suppressed for a terminal decision
+            // (WAITLISTED/REJECTED can be "current" without anything actually being ongoing).
+            if (isCurrent && stage.decision == null) {
+                val transition = rememberInfiniteTransition(label = "currentRing")
+                val ringScale by transition.animateFloat(
+                    initialValue = 0.7f,
+                    targetValue = 1.3f,
+                    animationSpec = infiniteRepeatable(tween(2400, easing = LinearOutSlowInEasing)),
+                    label = "ringScale"
+                )
+                val ringAlpha by transition.animateFloat(
+                    initialValue = 0.5f,
+                    targetValue = 0f,
+                    animationSpec = infiniteRepeatable(tween(2400, easing = LinearOutSlowInEasing)),
+                    label = "ringAlpha"
+                )
+                Box(
+                    modifier = Modifier
+                        .size(nodeAnchorSize)
+                        .graphicsLayer(scaleX = ringScale, scaleY = ringScale, alpha = ringAlpha)
+                        .border(1.5.dp, scheme.primary, CircleShape)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(if (isCurrent) 14.dp else 10.dp)
+                    .clip(CircleShape)
+                    .background(dotColor)
+            )
+        }
 
-        Column(modifier = Modifier.weight(1f)) {
+        val textModifier = if (isCurrent) {
+            Modifier
+                .liquidGlass(hazeState = hazeState, cornerRadius = 16.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        } else {
+            Modifier.padding(top = 2.dp)
+        }
+
+        Column(modifier = textModifier) {
             Text(
-                text = title,
+                text = stage.title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = if (isComplete) scheme.onSurface else scheme.onSurfaceVariant
+                color = when {
+                    isCurrent -> scheme.primary
+                    isDone -> scheme.onSurface
+                    else -> scheme.onSurfaceVariant
+                }
             )
             Text(
-                text = subtitle,
+                text = stage.subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = scheme.onSurfaceVariant
+                color = scheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
@@ -400,6 +536,8 @@ private fun TrackerScreenErrorPreview() {
     }
 }
 
+// Login itself 403s unless the registration is already paid (docs/APP_API_CONTRACT.md), so
+// `paid = false` can never actually reach this screen — every preview below is paid = true.
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
 @Composable
 private fun TrackerScreenPendingPreview() {
@@ -407,10 +545,33 @@ private fun TrackerScreenPendingPreview() {
         TrackerScreen(
             state = TrackerState(
                 recruitmentStatus = RecruitmentStatus(
-                    paid = false,
+                    paid = true,
                     decision = Decision.PENDING,
                     decisionNote = null,
                     testSlot = TestSlot(booked = false, startTime = null, endTime = null)
+                )
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun TrackerScreenTestBookedPreview() {
+    InnogeeksTheme {
+        TrackerScreen(
+            state = TrackerState(
+                recruitmentStatus = RecruitmentStatus(
+                    paid = true,
+                    decision = Decision.PENDING,
+                    decisionNote = null,
+                    testSlot = TestSlot(
+                        booked = true,
+                        startTime = "2026-08-15T10:00:00Z",
+                        endTime = "2026-08-15T11:00:00Z"
+                    )
                 )
             ),
             hazeState = HazeState(),

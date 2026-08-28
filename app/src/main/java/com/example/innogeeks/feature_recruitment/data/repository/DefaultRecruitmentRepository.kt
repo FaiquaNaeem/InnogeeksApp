@@ -8,7 +8,7 @@ import com.example.innogeeks.feature_recruitment.data.remote.RecruitmentRemoteDa
 import com.example.innogeeks.feature_recruitment.domain.model.RecruitmentStatus
 import com.example.innogeeks.feature_recruitment.domain.repository.RecruitmentRepository
 
-class OfflineFirstRecruitmentRepository(
+class DefaultRecruitmentRepository(
     private val remoteDataSource: RecruitmentRemoteDataSource
 ) : RecruitmentRepository {
 

@@ -88,13 +88,8 @@ private val registeredTabs = listOf(
     BottomNavTab("Profile", Icons.Filled.Person),
 )
 
-// Member/Coordinator: 4 tabs (Home/Attendance/Resources/Profile)
-private val memberTabs = listOf(
-    BottomNavTab("Home", Icons.Filled.Home),
-    BottomNavTab("Attendance", Icons.Filled.CalendarMonth),
-    BottomNavTab("Resources", Icons.Filled.FolderOpen),
-    BottomNavTab("Profile", Icons.Filled.Person),
-)
+// Member/Coordinator tabs are Phase 4 — Session has no Member/Coordinator variant yet,
+// so there's nothing to route to. Add the tab set back when that session state exists.
 
 @Composable
 fun MainScaffold(

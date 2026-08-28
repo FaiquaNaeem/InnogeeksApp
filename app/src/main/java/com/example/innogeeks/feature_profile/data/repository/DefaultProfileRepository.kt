@@ -8,7 +8,7 @@ import com.example.innogeeks.feature_profile.data.remote.ProfileRemoteDataSource
 import com.example.innogeeks.feature_profile.domain.model.StudentProfile
 import com.example.innogeeks.feature_profile.domain.repository.ProfileRepository
 
-class OfflineFirstProfileRepository(
+class DefaultProfileRepository(
     private val remoteDataSource: ProfileRemoteDataSource
 ) : ProfileRepository {
 

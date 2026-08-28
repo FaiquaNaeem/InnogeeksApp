@@ -57,6 +57,7 @@ import com.example.innogeeks.feature_domains.presentation.domains.DomainsRoot
 import com.example.innogeeks.feature_events.presentation.events.EventsRoot
 import com.example.innogeeks.feature_profile.presentation.profile.ProfileRoot
 import com.example.innogeeks.feature_recruitment.presentation.tracker.TrackerRoot
+import com.example.innogeeks.feature_resources.presentation.resources.ResourcesRoot
 import com.example.innogeeks.feature_home.domain.model.ClubStats
 import com.example.innogeeks.feature_home.presentation.home.HomeRoot
 import com.example.innogeeks.feature_home.presentation.home.HomeScreen
@@ -134,7 +135,7 @@ fun MainScaffold(
                     when (selectedTab) {
                         0 -> TrackerRoot(hazeState = hazeState)
                         1 -> DomainsRoot(hazeState = hazeState)
-                        2 -> PlaceholderScreen(title = "Resources", hazeState = hazeState)
+                        2 -> ResourcesRoot(hazeState = hazeState)
                         3 -> EventsRoot(hazeState = hazeState)
                         4 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
                     }
@@ -291,7 +292,7 @@ private fun InnogeeksBottomNav(
     }
 }
 
-// Placeholder for Phase 2 screens (Attendance, Resources)
+// Placeholder for Phase 4 screens (Attendance) — Member/Coordinator tabs aren't reachable yet.
 @Composable
 private fun PlaceholderScreen(
     title: String,

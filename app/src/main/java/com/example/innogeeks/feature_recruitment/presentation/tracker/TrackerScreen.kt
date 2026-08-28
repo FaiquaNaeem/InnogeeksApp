@@ -17,17 +17,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,6 +45,7 @@ import com.example.innogeeks.feature_recruitment.domain.model.TestSlot
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDateTime
@@ -50,9 +57,19 @@ import kotlinx.datetime.toLocalDateTime
 @Composable
 fun TrackerRoot(
     hazeState: HazeState,
+    onNavigateToResources: () -> Unit = {},
     viewModel: TrackerViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collectLatest { event ->
+            when (event) {
+                TrackerEvent.NavigateToResources -> onNavigateToResources()
+            }
+        }
+    }
+
     TrackerScreen(state = state, hazeState = hazeState, onAction = viewModel::onAction)
 }
 
@@ -119,6 +136,16 @@ fun TrackerScreen(
                 if (state.recruitmentStatus.decisionNote != null) {
                     item {
                         DecisionNoteCard(note = state.recruitmentStatus.decisionNote)
+                    }
+                }
+
+                val decision = state.recruitmentStatus.decision
+                if (decision == Decision.REJECTED || decision == Decision.WAITLISTED) {
+                    item {
+                        NonSelectionCard(
+                            decision = decision,
+                            onBrowseResourcesClick = { onAction(TrackerAction.OnBrowseResourcesClick) }
+                        )
                     }
                 }
             }
@@ -259,6 +286,75 @@ private fun DecisionNoteCard(
     }
 }
 
+// "What happens now" card for a decision that isn't SELECTED — REJECTED/WAITLISTED users
+// still see the progress stages above, but need a clear next step instead of a dead end.
+@Composable
+private fun NonSelectionCard(
+    decision: Decision,
+    onBrowseResourcesClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scheme = MaterialTheme.colorScheme
+
+    val icon: ImageVector
+    val headline: String
+    val message: String
+    when (decision) {
+        Decision.WAITLISTED -> {
+            icon = Icons.Default.HourglassTop
+            headline = "You're on the waitlist"
+            message = "We'll notify you the moment a seat opens up — no action needed right now. " +
+                "In the meantime, explore what the domains are building."
+        }
+        Decision.REJECTED -> {
+            icon = Icons.Default.SentimentSatisfied
+            headline = "Not selected this cycle"
+            message = "Thanks for applying — this isn't the end of the story. Keep building and " +
+                "look out for the next recruitment cycle."
+        }
+        else -> return
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(scheme.surfaceContainerHigh)
+            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(18.dp))
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = scheme.onSurfaceVariant,
+            modifier = Modifier.size(40.dp)
+        )
+        Text(
+            text = headline,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = scheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = scheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        OutlinedButton(onClick = onBrowseResourcesClick) {
+            Icon(
+                imageVector = Icons.Default.FolderOpen,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Text(text = "Browse Resources", modifier = Modifier.padding(start = 8.dp))
+        }
+    }
+}
+
 private val trackerDateTimeFormat = LocalDateTime.Format {
     monthName(MonthNames.ENGLISH_ABBREVIATED)
     char(' ')
@@ -315,6 +411,52 @@ private fun TrackerScreenPendingPreview() {
                     decision = Decision.PENDING,
                     decisionNote = null,
                     testSlot = TestSlot(booked = false, startTime = null, endTime = null)
+                )
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun TrackerScreenWaitlistedPreview() {
+    InnogeeksTheme {
+        TrackerScreen(
+            state = TrackerState(
+                recruitmentStatus = RecruitmentStatus(
+                    paid = true,
+                    decision = Decision.WAITLISTED,
+                    decisionNote = null,
+                    testSlot = TestSlot(
+                        booked = true,
+                        startTime = "2026-08-15T10:00:00Z",
+                        endTime = "2026-08-15T11:00:00Z"
+                    )
+                )
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun TrackerScreenRejectedPreview() {
+    InnogeeksTheme {
+        TrackerScreen(
+            state = TrackerState(
+                recruitmentStatus = RecruitmentStatus(
+                    paid = true,
+                    decision = Decision.REJECTED,
+                    decisionNote = "Thanks for your effort — we encourage you to reapply next cycle.",
+                    testSlot = TestSlot(
+                        booked = true,
+                        startTime = "2026-08-15T10:00:00Z",
+                        endTime = "2026-08-15T11:00:00Z"
+                    )
                 )
             ),
             hazeState = HazeState(),

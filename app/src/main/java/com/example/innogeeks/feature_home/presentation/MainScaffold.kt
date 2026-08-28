@@ -128,7 +128,10 @@ fun MainScaffold(
                 }
                 is Session.Registered -> {
                     when (selectedTab) {
-                        0 -> TrackerRoot(hazeState = hazeState)
+                        0 -> TrackerRoot(
+                            hazeState = hazeState,
+                            onNavigateToResources = { selectedTab = 2 }
+                        )
                         1 -> DomainsRoot(hazeState = hazeState)
                         2 -> ResourcesRoot(hazeState = hazeState)
                         3 -> EventsRoot(hazeState = hazeState)

@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.innogeeks.core.domain.util.Result
 import com.example.innogeeks.core.presentation.mapper.toUiText
 import com.example.innogeeks.feature_recruitment.domain.use_case.GetRecruitmentStatusUseCase
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -17,6 +19,9 @@ class TrackerViewModel(
     private val _state = MutableStateFlow(TrackerState())
     val state = _state.asStateFlow()
 
+    private val _events = Channel<TrackerEvent>()
+    val events = _events.receiveAsFlow()
+
     init {
         loadRecruitmentStatus()
     }
@@ -24,6 +29,11 @@ class TrackerViewModel(
     fun onAction(action: TrackerAction) {
         when (action) {
             TrackerAction.OnRetryClick -> loadRecruitmentStatus()
+            TrackerAction.OnBrowseResourcesClick -> {
+                viewModelScope.launch {
+                    _events.send(TrackerEvent.NavigateToResources)
+                }
+            }
         }
     }
 

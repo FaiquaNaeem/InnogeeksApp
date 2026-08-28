@@ -222,7 +222,7 @@ private fun RecruitmentStatus.toJourneyStages(): List<JourneyStageUi> {
     val (decisionTitle, decisionSubtitle) = when (decision) {
         Decision.SELECTED -> "Selected" to "Congratulations! You're now a member."
         Decision.WAITLISTED -> "Waitlisted" to "You're on the waitlist. We'll notify you."
-        Decision.REJECTED -> "Not selected" to "Thank you for applying. Keep building!"
+        Decision.REJECTED -> "Not selected" to "Thank you for applying."
         Decision.PENDING -> "Decision" to "Awaiting result"
     }
     stages += JourneyStageUi(
@@ -440,13 +440,17 @@ private fun NonSelectionCard(
             icon = Icons.Default.HourglassTop
             headline = "You're on the waitlist"
             message = "We'll notify you the moment a seat opens up — no action needed right now. " +
-                "In the meantime, explore what the domains are building."
+                "In the meantime, the Resources tab is open to you."
         }
         Decision.REJECTED -> {
             icon = Icons.Default.SentimentSatisfied
-            headline = "Not selected this cycle"
-            message = "Thanks for applying — this isn't the end of the story. Keep building and " +
-                "look out for the next recruitment cycle."
+            headline = "Not selected this time"
+            // Recruitment is first-year-only, so there is no next cycle to point someone to.
+            // Lifetime Resources access is the one thing this app actually offers afterward —
+            // never imply reapplying is an option.
+            message = "Thanks for going through the process. Recruitment is open to first-years " +
+                "only, so this is the final decision for this cycle. You keep full access to " +
+                "Resources for as long as you want it — use it to keep building."
         }
         else -> return
     }
@@ -612,7 +616,7 @@ private fun TrackerScreenRejectedPreview() {
                 recruitmentStatus = RecruitmentStatus(
                     paid = true,
                     decision = Decision.REJECTED,
-                    decisionNote = "Thanks for your effort — we encourage you to reapply next cycle.",
+                    decisionNote = "Thanks for your effort in the test and interview this cycle.",
                     testSlot = TestSlot(
                         booked = true,
                         startTime = "2026-08-15T10:00:00Z",

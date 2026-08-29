@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -103,11 +104,51 @@ private fun LearnMoreButton(
     }
 }
 
-// Image + title + 2-line blurb + Learn more, for both upcoming and past events.
+// Date badge (day + month) — every card gets one, past or future alike.
+@Composable
+private fun EventDateBadge(day: String, month: String, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Column(
+        modifier = modifier
+            .size(52.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(scheme.surfaceContainer)
+            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(12.dp)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(text = day, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = scheme.primary)
+        Text(text = month, style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+    }
+}
+
+// Small pill clarifying a recurring event's date is just its next occurrence, not a one-off.
+@Composable
+private fun CadenceChip(cadence: String, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    Text(
+        text = cadence,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = scheme.primary,
+        modifier = modifier
+            .clip(RoundedCornerShape(percent = 50))
+            .background(scheme.primary.copy(alpha = 0.14f))
+            .border(1.dp, scheme.primary.copy(alpha = 0.4f), RoundedCornerShape(percent = 50))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    )
+}
+
+// Date badge + title/blurb, an attendee count once known, and Learn more — same shape
+// regardless of whether the event is past, upcoming, or recurring.
 @Composable
 fun EventCard(
     title: String,
     blurb: String,
+    day: String,
+    month: String,
+    attendees: Int,
+    cadence: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -122,12 +163,25 @@ fun EventCard(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         EventImagePlaceholder()
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = scheme.onSurface
-        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            EventDateBadge(day = day, month = month)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface
+                )
+                if (cadence.isNotBlank()) {
+                    CadenceChip(cadence = cadence)
+                }
+            }
+        }
+
         Text(
             text = blurb,
             style = MaterialTheme.typography.bodySmall,
@@ -135,6 +189,16 @@ fun EventCard(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+
+        if (attendees > 0) {
+            Text(
+                text = "$attendees attendees",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = scheme.onSurfaceVariant
+            )
+        }
+
         LearnMoreButton(onClick = onClick)
     }
 }
@@ -202,6 +266,10 @@ private fun EventComponentsPreview() {
             EventCard(
                 title = "Hack The Campus 3.0",
                 blurb = "A 24-hour campus-wide hackathon open to all branches.",
+                day = "14",
+                month = "AUG",
+                attendees = 210,
+                cadence = "",
                 onClick = {}
             )
             EventPhotoRow()

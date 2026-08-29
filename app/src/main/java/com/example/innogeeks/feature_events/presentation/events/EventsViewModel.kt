@@ -40,12 +40,6 @@ class EventsViewModel(
 
     fun onAction(action: EventsAction) {
         when (action) {
-            // Switching tabs closes whatever detail page was open, since that event is no
-            // longer in the visible list.
-            is EventsAction.OnTabSelected -> _state.update {
-                it.copy(selectedTab = action.tab, selectedEventId = null)
-            }
-
             is EventsAction.OnEventClick -> _state.update {
                 it.copy(selectedEventId = action.eventId)
             }

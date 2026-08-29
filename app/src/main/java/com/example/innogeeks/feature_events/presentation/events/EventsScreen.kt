@@ -34,10 +34,10 @@ import com.example.innogeeks.feature_events.domain.model.ClubEvent
 import com.example.innogeeks.feature_events.presentation.events.components.EventCard
 import com.example.innogeeks.feature_events.presentation.events.components.EventImagePlaceholder
 import com.example.innogeeks.feature_events.presentation.events.components.EventPhotoRow
-import com.example.innogeeks.feature_events.presentation.events.components.EventTabs
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.datetime.LocalDate
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -110,7 +110,7 @@ private fun EventListScreen(
                     color = scheme.onSurface
                 )
                 Text(
-                    text = "Display only — a look at what the club runs. No registration.",
+                    text = "Everything the club runs — display only, no registration.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp)
@@ -118,18 +118,14 @@ private fun EventListScreen(
             }
         }
 
-        item {
-            EventTabs(
-                selectedTab = state.selectedTab,
-                onTabSelected = { onAction(EventsAction.OnTabSelected(it)) },
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-        }
-
-        items(state.visibleEvents, key = { it.id }) { event ->
+        items(state.sortedEvents, key = { it.id }) { event ->
             EventCard(
                 title = event.title,
-                blurb = if (event.isUpcoming) event.description else event.recap,
+                blurb = event.description,
+                day = dayLabel(event.date),
+                month = monthLabel(event.date),
+                attendees = event.attendees,
+                cadence = event.cadence,
                 onClick = { onAction(EventsAction.OnEventClick(event.id)) }
             )
         }
@@ -188,22 +184,27 @@ private fun EventDetailScreen(
         )
 
         Text(
-            text = if (event.isUpcoming) {
-                "${event.day} ${event.month} · ${event.timeAndPlace}"
-            } else {
-                "${event.day} ${event.month} · ${event.attendees} attendees"
+            text = buildString {
+                append(dayLabel(event.date))
+                append(' ')
+                append(monthLabel(event.date))
+                append(' ')
+                append(event.date.year)
+                if (event.timeAndPlace.isNotBlank()) append(" · ${event.timeAndPlace}")
+                if (event.cadence.isNotBlank()) append(" · ${event.cadence}")
+                if (event.attendees > 0) append(" · ${event.attendees} attendees")
             },
             style = MaterialTheme.typography.bodySmall,
             color = scheme.onSurfaceVariant
         )
 
         Text(
-            text = if (event.isUpcoming) event.description else event.recap,
+            text = event.description,
             style = MaterialTheme.typography.bodyMedium,
             color = scheme.onSurfaceVariant
         )
 
-        if (!event.isUpcoming) {
+        if (event.attendees > 0) {
             EventPhotoRow()
         }
 
@@ -216,67 +217,49 @@ private fun EventDetailScreen(
     }
 }
 
+private fun dayLabel(date: LocalDate): String = date.dayOfMonth.toString().padStart(2, '0')
+
+private fun monthLabel(date: LocalDate): String = date.month.name.take(3)
+
 private val previewEvents = listOf(
     ClubEvent(
         id = "u1",
-        day = "14",
-        month = "AUG",
         title = "Hack The Campus 3.0",
-        isUpcoming = true,
+        date = LocalDate(2026, 9, 14),
         timeAndPlace = "10:00 AM · Main Auditorium",
         description = "A 24-hour campus-wide hackathon open to all branches. Teams of up to 4, problem statements released on the day."
     ),
     ClubEvent(
         id = "u2",
-        day = "22",
-        month = "AUG",
-        title = "AI/ML Bootcamp — Session 2",
-        isUpcoming = true,
-        timeAndPlace = "3:00 PM · Seminar Hall",
-        description = "Hands-on session on model evaluation and hyperparameter tuning, continuing from Session 1."
+        title = "Web Dev Weekly Standup",
+        date = LocalDate(2026, 9, 1),
+        timeAndPlace = "6:00 PM · Innogeeks Lab",
+        description = "Weekly sync for the Web Dev domain — progress updates, blockers, and pairing for the week ahead.",
+        isRecurring = true,
+        cadence = "Every Tuesday, 6 PM"
     ),
     ClubEvent(
         id = "p1",
-        day = "22",
-        month = "MAR",
         title = "Innogeeks Annual Meet 2026",
-        isUpcoming = false,
+        date = LocalDate(2026, 3, 22),
         attendees = 180,
-        recap = "The club's biggest gathering of the year — recap of the year's wins, domain showcases, and the annual awards."
+        description = "The club's biggest gathering of the year — recap of the year's wins, domain showcases, and the annual awards."
     ),
     ClubEvent(
         id = "p2",
-        day = "10",
-        month = "FEB",
         title = "Smart India Hackathon — Internal Round",
-        isUpcoming = false,
+        date = LocalDate(2026, 2, 10),
         attendees = 96,
-        recap = "Internal selection round for SIH, with 24 teams pitching problem-statement solutions to a panel of faculty judges."
+        description = "Internal selection round for SIH, with 24 teams pitching problem-statement solutions to a panel of faculty judges."
     )
 )
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 780)
 @Composable
-private fun EventsScreenUpcomingPreview() {
+private fun EventsScreenListPreview() {
     InnogeeksTheme {
         EventsScreen(
             state = EventsState(isLoading = false, events = previewEvents),
-            hazeState = HazeState(),
-            onAction = {}
-        )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 780)
-@Composable
-private fun EventsScreenPastPreview() {
-    InnogeeksTheme {
-        EventsScreen(
-            state = EventsState(
-                isLoading = false,
-                events = previewEvents,
-                selectedTab = EventTab.PAST
-            ),
             hazeState = HazeState(),
             onAction = {}
         )
@@ -307,7 +290,6 @@ private fun EventsScreenPastDetailPreview() {
             state = EventsState(
                 isLoading = false,
                 events = previewEvents,
-                selectedTab = EventTab.PAST,
                 selectedEventId = "p1"
             ),
             hazeState = HazeState(),

@@ -1,15 +1,17 @@
 package com.example.innogeeks.feature_events.domain.model
 
+import kotlinx.datetime.LocalDate
+
 data class ClubEvent(
     val id: String,
-    val day: String,
-    val month: String,
     val title: String,
-    val isUpcoming: Boolean,
-    // Upcoming events carry a time/location line and a description.
+    // For a recurring event, this is its next occurrence — real dates come from the backend later.
+    val date: LocalDate,
     val timeAndPlace: String = "",
     val description: String = "",
-    // Past events carry an attendee count and a recap instead.
+    // 0 means no attendance data yet (the event hasn't happened).
     val attendees: Int = 0,
-    val recap: String = ""
+    val isRecurring: Boolean = false,
+    // e.g. "Every Tuesday, 6 PM" — only meaningful when isRecurring is true.
+    val cadence: String = ""
 )

@@ -5,10 +5,16 @@ data class DomainStat(
     val label: String
 )
 
-data class DomainLead(
+// COORDINATOR = 2nd-years running the domain day-to-day. TEAM = 3rd-years who make up the rest of it.
+enum class DomainMemberRole {
+    COORDINATOR,
+    TEAM
+}
+
+data class DomainMember(
     val name: String,
-    val role: String,
-    val initials: String
+    val initials: String,
+    val role: DomainMemberRole
 )
 
 // Accent index maps to a colour pair resolved from the theme at render time.
@@ -21,5 +27,5 @@ data class Domain(
     val stats: List<DomainStat>,
     val techStack: List<String>,
     val projects: List<String>,
-    val lead: DomainLead
+    val members: List<DomainMember>
 )

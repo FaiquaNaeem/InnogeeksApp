@@ -48,7 +48,6 @@ import androidx.navigation.toRoute
 import com.example.innogeeks.feature_domains.domain.model.Domain
 import com.example.innogeeks.feature_domains.domain.model.DomainMember
 import com.example.innogeeks.feature_domains.domain.model.DomainMemberRole
-import com.example.innogeeks.feature_domains.domain.model.DomainStat
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import com.example.innogeeks.ui.theme.displayFontFamily
@@ -287,15 +286,11 @@ internal val previewDomainList = listOf(
         id = "webd",
         name = "Web Dev",
         tagline = "React, Node & everything between",
+        description = "Web Dev builds and maintains all of Innogeeks' web-facing tools, from the club site to event portals.",
         emoji = "🌐",
         accentIndex = 0,
-        stats = listOf(
-            DomainStat(18, "Members"),
-            DomainStat(12, "Projects"),
-            DomainStat(3, "Hackathon Wins")
-        ),
+        memberCount = 18,
         techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
-        projects = listOf("Innogeeks Website", "Event Portal", "Alumni Network"),
         members = listOf(
             DomainMember("Priya Sharma", "PS", DomainMemberRole.COORDINATOR),
             DomainMember("Rahul Deshmukh", "RD", DomainMemberRole.COORDINATOR),
@@ -306,15 +301,11 @@ internal val previewDomainList = listOf(
         id = "appd",
         name = "App Dev",
         tagline = "Native & cross-platform builders",
+        description = "App Dev designs and ships the club's native and cross-platform mobile apps, end to end.",
         emoji = "📱",
         accentIndex = 1,
-        stats = listOf(
-            DomainStat(14, "Members"),
-            DomainStat(9, "Apps Shipped"),
-            DomainStat(2, "Hackathon Wins")
-        ),
+        memberCount = 14,
         techStack = listOf("Kotlin", "Flutter", "Firebase", "Jetpack Compose"),
-        projects = listOf("Innogeeks App", "Campus Navigator", "Mess Menu Tracker"),
         members = listOf(
             DomainMember("Rohan Verma", "RV", DomainMemberRole.COORDINATOR),
             DomainMember("Kavya Reddy", "KR", DomainMemberRole.COORDINATOR),
@@ -325,15 +316,11 @@ internal val previewDomainList = listOf(
         id = "ml",
         name = "Machine Learning",
         tagline = "Models, data & leaderboard chasing",
+        description = "Machine Learning explores applied ML and data science, from model training to real-world deployment.",
         emoji = "🧠",
         accentIndex = 2,
-        stats = listOf(
-            DomainStat(11, "Members"),
-            DomainStat(7, "Models Trained"),
-            DomainStat(4, "Kaggle Medals")
-        ),
+        memberCount = 11,
         techStack = listOf("Python", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas"),
-        projects = listOf("Attendance Face-ID", "Crop Yield Predictor", "Chatbot Assistant"),
         members = listOf(
             DomainMember("Ananya Gupta", "AG", DomainMemberRole.COORDINATOR),
             DomainMember("Vikram Rao", "VR", DomainMemberRole.COORDINATOR),

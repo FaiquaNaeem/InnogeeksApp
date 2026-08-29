@@ -55,7 +55,6 @@ import androidx.navigation.toRoute
 import com.example.innogeeks.core.presentation.components.StatTile
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_domains.domain.model.Domain
-import com.example.innogeeks.feature_domains.domain.model.DomainStat
 import com.example.innogeeks.feature_resources.domain.model.ResourceItem
 import com.example.innogeeks.feature_resources.domain.model.ResourceType
 import com.example.innogeeks.feature_resources.presentation.resources.components.domainAccent
@@ -347,8 +346,8 @@ private val previewResources = listOf(
 )
 
 private val previewDomains = listOf(
-    Domain("webd", "Web Dev", "React, Node & everything between", "🌐", 0, listOf(DomainStat(18, "Members")), emptyList(), emptyList(), emptyList()),
-    Domain("appd", "App Dev", "Native & cross-platform builders", "📱", 1, listOf(DomainStat(14, "Members")), emptyList(), emptyList(), emptyList())
+    Domain("webd", "Web Dev", "React, Node & everything between", "Web Dev builds and maintains all of Innogeeks' web-facing tools.", "🌐", 0, 18, emptyList(), emptyList()),
+    Domain("appd", "App Dev", "Native & cross-platform builders", "App Dev designs and ships the club's native and cross-platform mobile apps.", "📱", 1, 14, emptyList(), emptyList())
 )
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)

@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.sp
 import com.example.innogeeks.core.presentation.components.SectionLabel
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_domains.domain.model.Domain
-import com.example.innogeeks.feature_domains.domain.model.DomainStat
 import com.example.innogeeks.feature_resources.domain.model.ResourceItem
 import com.example.innogeeks.feature_resources.domain.model.ResourceType
 import com.example.innogeeks.feature_resources.presentation.resources.components.accentColor
@@ -297,8 +296,9 @@ private fun ResourceChip(text: String, accent: Color, modifier: Modifier = Modif
 }
 
 private val previewDomain = Domain(
-    id = "webd", name = "Web Dev", tagline = "React, Node & everything between", emoji = "🌐",
-    accentIndex = 0, stats = listOf(DomainStat(18, "Members")), techStack = emptyList(), projects = emptyList(), members = emptyList()
+    id = "webd", name = "Web Dev", tagline = "React, Node & everything between",
+    description = "Web Dev builds and maintains all of Innogeeks' web-facing tools.", emoji = "🌐",
+    accentIndex = 0, memberCount = 18, techStack = emptyList(), members = emptyList()
 )
 
 private val previewResources = listOf(

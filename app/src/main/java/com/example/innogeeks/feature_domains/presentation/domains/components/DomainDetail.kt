@@ -36,7 +36,6 @@ import com.example.innogeeks.core.presentation.components.StatTile
 import com.example.innogeeks.feature_domains.domain.model.Domain
 import com.example.innogeeks.feature_domains.domain.model.DomainMember
 import com.example.innogeeks.feature_domains.domain.model.DomainMemberRole
-import com.example.innogeeks.feature_domains.domain.model.DomainStat
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
@@ -55,15 +54,13 @@ fun DomainDetail(
     ) {
         DomainSignatureIcon(domainId = domain.id, accent = accent, hazeState = hazeState, height = 140.dp)
 
+        val coordinators = domain.members.filter { it.role == DomainMemberRole.COORDINATOR }
+        val team = domain.members.filter { it.role == DomainMemberRole.TEAM }
+
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            domain.stats.forEach { stat ->
-                StatTile(
-                    value = stat.value,
-                    caption = stat.label,
-                    hazeState = hazeState,
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            StatTile(value = domain.memberCount, caption = "Members", hazeState = hazeState, modifier = Modifier.weight(1f))
+            StatTile(value = coordinators.size, caption = "Coordinators", hazeState = hazeState, modifier = Modifier.weight(1f))
+            StatTile(value = team.size, caption = "Core Team", hazeState = hazeState, modifier = Modifier.weight(1f))
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -72,14 +69,13 @@ fun DomainDetail(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            SectionLabel("Notable Projects")
-            domain.projects.forEachIndexed { index, project ->
-                ProjectRow(text = project, accent = accent, index = index)
-            }
+            SectionLabel("About")
+            Text(
+                text = domain.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
-
-        val coordinators = domain.members.filter { it.role == DomainMemberRole.COORDINATOR }
-        val team = domain.members.filter { it.role == DomainMemberRole.TEAM }
 
         if (coordinators.isNotEmpty()) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -151,54 +147,6 @@ private fun StaggeredChipFlow(
     }
 }
 
-// Slides in from the left, staggered by position.
-@Composable
-private fun ProjectRow(
-    text: String,
-    accent: Color,
-    index: Int,
-    modifier: Modifier = Modifier
-) {
-    var visible by remember(text) { mutableStateOf(false) }
-    LaunchedEffect(text) {
-        delay(80L * index)
-        visible = true
-    }
-    val offsetX by animateFloatAsState(
-        targetValue = if (visible) 0f else -24f,
-        animationSpec = tween(300),
-        label = "projectOffset"
-    )
-    val alpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(300),
-        label = "projectAlpha"
-    )
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                translationX = offsetX
-                this.alpha = alpha
-            },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(accent)
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
 // One row per coordinator or team member — same avatar-and-caption shape as the old lead footer.
 @Composable
 private fun MemberRow(
@@ -252,15 +200,11 @@ private fun DomainDetailPreview() {
                 id = "webd",
                 name = "Web Dev",
                 tagline = "React, Node & everything between",
+                description = "Web Dev builds and maintains all of Innogeeks' web-facing tools, from the club site to event portals.",
                 emoji = "🌐",
                 accentIndex = 0,
-                stats = listOf(
-                    DomainStat(18, "Members"),
-                    DomainStat(12, "Projects"),
-                    DomainStat(3, "Hackathon Wins")
-                ),
+                memberCount = 18,
                 techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
-                projects = listOf("Innogeeks Website", "Event Portal", "Alumni Network"),
                 members = listOf(
                     DomainMember("Priya Sharma", "PS", DomainMemberRole.COORDINATOR),
                     DomainMember("Rahul Deshmukh", "RD", DomainMemberRole.COORDINATOR),

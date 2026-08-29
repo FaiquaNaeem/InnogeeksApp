@@ -2,10 +2,13 @@ package com.example.innogeeks.feature_domains.data
 
 import com.example.innogeeks.feature_domains.domain.DomainsRepository
 import com.example.innogeeks.feature_domains.domain.model.Domain
-import com.example.innogeeks.feature_domains.domain.model.DomainLead
+import com.example.innogeeks.feature_domains.domain.model.DomainMember
+import com.example.innogeeks.feature_domains.domain.model.DomainMemberRole.COORDINATOR
+import com.example.innogeeks.feature_domains.domain.model.DomainMemberRole.TEAM
 import com.example.innogeeks.feature_domains.domain.model.DomainStat
 
-// Guest-mode data source. No domains endpoint exists yet.
+// Guest-mode data source. No domains endpoint exists yet — swap this for a Ktor-backed
+// implementation once /domains ships; DomainsRepository is the contract callers already code against.
 class InMemoryDomainsRepository : DomainsRepository {
 
     override suspend fun getDomains(): Result<List<Domain>> {
@@ -24,7 +27,13 @@ class InMemoryDomainsRepository : DomainsRepository {
                     ),
                     techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
                     projects = listOf("Innogeeks Website", "Event Portal", "Alumni Network"),
-                    lead = DomainLead("Priya Sharma", "Domain Lead · Web Dev", "PS")
+                    members = listOf(
+                        DomainMember("Priya Sharma", "PS", COORDINATOR),
+                        DomainMember("Rahul Deshmukh", "RD", COORDINATOR),
+                        DomainMember("Ananya Iyer", "AI", TEAM),
+                        DomainMember("Yash Malhotra", "YM", TEAM),
+                        DomainMember("Sneha Pillai", "SP", TEAM)
+                    )
                 ),
                 Domain(
                     id = "appd",
@@ -39,7 +48,12 @@ class InMemoryDomainsRepository : DomainsRepository {
                     ),
                     techStack = listOf("Kotlin", "Flutter", "Firebase", "Jetpack Compose"),
                     projects = listOf("Innogeeks App", "Campus Navigator", "Mess Menu Tracker"),
-                    lead = DomainLead("Rohan Verma", "Domain Lead · App Dev", "RV")
+                    members = listOf(
+                        DomainMember("Rohan Verma", "RV", COORDINATOR),
+                        DomainMember("Kavya Reddy", "KR", COORDINATOR),
+                        DomainMember("Arjun Nanda", "AN", TEAM),
+                        DomainMember("Divya Krishnan", "DK", TEAM)
+                    )
                 ),
                 Domain(
                     id = "ml",
@@ -54,7 +68,13 @@ class InMemoryDomainsRepository : DomainsRepository {
                     ),
                     techStack = listOf("Python", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas"),
                     projects = listOf("Attendance Face-ID", "Crop Yield Predictor", "Chatbot Assistant"),
-                    lead = DomainLead("Ananya Gupta", "Domain Lead · ML", "AG")
+                    members = listOf(
+                        DomainMember("Ananya Gupta", "AG", COORDINATOR),
+                        DomainMember("Vikram Rao", "VR", COORDINATOR),
+                        DomainMember("Nisha Bhat", "NB", TEAM),
+                        DomainMember("Aditya Menon", "AM", TEAM),
+                        DomainMember("Pooja Chawla", "PC", TEAM)
+                    )
                 ),
                 Domain(
                     id = "arvr",
@@ -69,7 +89,11 @@ class InMemoryDomainsRepository : DomainsRepository {
                     ),
                     techStack = listOf("Unity", "WebXR", "ARCore", "Blender"),
                     projects = listOf("Campus AR Tour", "VR Lab Simulator", "Holo Notice Board"),
-                    lead = DomainLead("Karan Mehta", "Domain Lead · AR/VR", "KM")
+                    members = listOf(
+                        DomainMember("Karan Mehta", "KM", COORDINATOR),
+                        DomainMember("Ritika Joshi", "RJ", COORDINATOR),
+                        DomainMember("Sameer Khan", "SK", TEAM)
+                    )
                 ),
                 Domain(
                     id = "blockchain",
@@ -84,7 +108,11 @@ class InMemoryDomainsRepository : DomainsRepository {
                     ),
                     techStack = listOf("Solidity", "Ethereum", "Hardhat", "IPFS"),
                     projects = listOf("Certificate Verifier", "Campus Voting dApp", "NFT Ticketing"),
-                    lead = DomainLead("Ishaan Kapoor", "Domain Lead · Blockchain", "IK")
+                    members = listOf(
+                        DomainMember("Ishaan Kapoor", "IK", COORDINATOR),
+                        DomainMember("Tanvi Agarwal", "TA", TEAM),
+                        DomainMember("Devansh Oberoi", "DO", TEAM)
+                    )
                 ),
                 Domain(
                     id = "iot",
@@ -103,7 +131,11 @@ class InMemoryDomainsRepository : DomainsRepository {
                         "Campus Air Quality Sensor",
                         "Auto Irrigation Rig"
                     ),
-                    lead = DomainLead("Meera Nair", "Domain Lead · IoT", "MN")
+                    members = listOf(
+                        DomainMember("Meera Nair", "MN", COORDINATOR),
+                        DomainMember("Farhan Sheikh", "FS", COORDINATOR),
+                        DomainMember("Ojas Kulkarni", "OK", TEAM)
+                    )
                 )
             )
         )

@@ -34,29 +34,33 @@ import androidx.compose.ui.unit.dp
 import com.example.innogeeks.core.presentation.components.SectionLabel
 import com.example.innogeeks.core.presentation.components.StatTile
 import com.example.innogeeks.feature_domains.domain.model.Domain
-import com.example.innogeeks.feature_domains.domain.model.DomainLead
+import com.example.innogeeks.feature_domains.domain.model.DomainMember
+import com.example.innogeeks.feature_domains.domain.model.DomainMemberRole
 import com.example.innogeeks.feature_domains.domain.model.DomainStat
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
 
-// Everything shown inside an expanded domain row.
+// Everything shown on a domain's detail page.
 @Composable
 fun DomainDetail(
     domain: Domain,
     accent: Color,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        DomainSignatureIcon(domainId = domain.id, accent = accent)
+        DomainSignatureIcon(domainId = domain.id, accent = accent, hazeState = hazeState, height = 140.dp)
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             domain.stats.forEach { stat ->
                 StatTile(
                     value = stat.value,
                     caption = stat.label,
+                    hazeState = hazeState,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -74,8 +78,27 @@ fun DomainDetail(
             }
         }
 
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        LeadFooter(lead = domain.lead, accent = accent)
+        val coordinators = domain.members.filter { it.role == DomainMemberRole.COORDINATOR }
+        val team = domain.members.filter { it.role == DomainMemberRole.TEAM }
+
+        if (coordinators.isNotEmpty()) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionLabel("Coordinators")
+                coordinators.forEach { member ->
+                    MemberRow(member = member, accent = accent, subtitle = "2nd Year · ${domain.name}")
+                }
+            }
+        }
+
+        if (team.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionLabel("Core Team")
+                team.forEach { member ->
+                    MemberRow(member = member, accent = accent, subtitle = "3rd Year · ${domain.name}")
+                }
+            }
+        }
     }
 }
 
@@ -176,10 +199,12 @@ private fun ProjectRow(
     }
 }
 
+// One row per coordinator or team member — same avatar-and-caption shape as the old lead footer.
 @Composable
-private fun LeadFooter(
-    lead: DomainLead,
+private fun MemberRow(
+    member: DomainMember,
     accent: Color,
+    subtitle: String,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -196,7 +221,7 @@ private fun LeadFooter(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = lead.initials,
+                text = member.initials,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = accent
@@ -204,13 +229,13 @@ private fun LeadFooter(
         }
         Column {
             Text(
-                text = lead.name,
+                text = member.name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = lead.role,
+                text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -236,9 +261,14 @@ private fun DomainDetailPreview() {
                 ),
                 techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
                 projects = listOf("Innogeeks Website", "Event Portal", "Alumni Network"),
-                lead = DomainLead("Priya Sharma", "Domain Lead · Web Dev", "PS")
+                members = listOf(
+                    DomainMember("Priya Sharma", "PS", DomainMemberRole.COORDINATOR),
+                    DomainMember("Rahul Deshmukh", "RD", DomainMemberRole.COORDINATOR),
+                    DomainMember("Ananya Iyer", "AI", DomainMemberRole.TEAM)
+                )
             ),
             accent = MaterialTheme.colorScheme.primary,
+            hazeState = remember { HazeState() },
             modifier = Modifier.padding(16.dp)
         )
     }

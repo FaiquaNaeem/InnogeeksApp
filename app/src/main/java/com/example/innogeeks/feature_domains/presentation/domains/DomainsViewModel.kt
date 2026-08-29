@@ -40,19 +40,6 @@ class DomainsViewModel(
 
     fun onAction(action: DomainsAction) {
         when (action) {
-            // Tapping the open row closes it; tapping another swaps which one is open.
-            is DomainsAction.OnDomainToggled -> {
-                _state.update {
-                    it.copy(
-                        expandedDomainId = if (it.expandedDomainId == action.domainId) {
-                            null
-                        } else {
-                            action.domainId
-                        }
-                    )
-                }
-            }
-
             DomainsAction.OnRetry -> loadDomains()
         }
     }

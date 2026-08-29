@@ -8,8 +8,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,13 +15,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -31,18 +28,23 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import dev.chrisbanes.haze.HazeState
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-// Each domain gets its own animated glyph, drawn on a shared 68.dp stage.
+// Each domain gets its own animated glyph, drawn on a frosted-glass stage.
 @Composable
 fun DomainSignatureIcon(
     domainId: String,
     accent: Color,
-    modifier: Modifier = Modifier
+    hazeState: HazeState,
+    modifier: Modifier = Modifier,
+    height: Dp = 68.dp
 ) {
     val transition = rememberInfiniteTransition(label = "signature")
     // Single 0..1 driver reused by every glyph so they all share one clock.
@@ -61,10 +63,8 @@ fun DomainSignatureIcon(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(68.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(1.dp, muted, RoundedCornerShape(12.dp)),
+            .height(height)
+            .liquidGlass(hazeState = hazeState, cornerRadius = 20.dp),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize().padding(10.dp)) {
@@ -272,6 +272,7 @@ private fun DrawScope.drawIotBeams(progress: Float, accent: Color, muted: Color)
 @Composable
 private fun DomainSignatureIconPreview() {
     InnogeeksTheme {
+        val hazeState = remember { HazeState() }
         val scheme = MaterialTheme.colorScheme
         val ids = listOf("webd", "appd", "ml", "arvr", "blockchain", "iot")
         val accents = listOf(
@@ -292,6 +293,7 @@ private fun DomainSignatureIconPreview() {
                         DomainSignatureIcon(
                             domainId = id,
                             accent = accents[rowIndex * 2 + colIndex],
+                            hazeState = hazeState,
                             modifier = Modifier.weight(1f)
                         )
                     }

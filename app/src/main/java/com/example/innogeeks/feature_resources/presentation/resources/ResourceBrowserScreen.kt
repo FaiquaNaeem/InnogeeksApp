@@ -4,7 +4,6 @@ import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -110,38 +109,23 @@ fun ResourceBrowserScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .liquidGlass(hazeState = hazeState, cornerRadius = 16.dp)
-                    .padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                typesPresent.forEach { type ->
-                    HeroStat(count = resources.count { it.type == type }, label = type.label())
-                }
-            }
-
-            Spacer(modifier = Modifier.padding(top = 12.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
                     .liquidGlass(hazeState = hazeState, cornerRadius = 14.dp)
-                    .padding(5.dp)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(5.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 TypeFilterChip(
                     label = "All",
-                    count = resources.size,
                     isActive = activeType == null,
-                    onClick = { activeType = null }
+                    onClick = { activeType = null },
+                    modifier = Modifier.weight(1f)
                 )
                 typesPresent.forEach { type ->
                     TypeFilterChip(
                         label = type.label(),
-                        count = resources.count { it.type == type },
                         isActive = activeType == type,
                         accent = type.accentColor(),
-                        onClick = { activeType = type }
+                        onClick = { activeType = type },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -188,22 +172,8 @@ fun ResourceBrowserScreen(
 }
 
 @Composable
-private fun HeroStat(count: Int, label: String, modifier: Modifier = Modifier) {
-    val scheme = MaterialTheme.colorScheme
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        Text(text = "$count", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = scheme.secondary)
-        Text(text = label, fontSize = 8.5.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.7.sp, color = scheme.onSurfaceVariant)
-    }
-}
-
-@Composable
 private fun TypeFilterChip(
     label: String,
-    count: Int,
     isActive: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -214,25 +184,22 @@ private fun TypeFilterChip(
     val background = if (isActive) chipAccent else Color.Transparent
     val contentColor = if (isActive) Color.Black.copy(alpha = 0.8f) else scheme.onSurfaceVariant
 
-    Row(
+    Box(
         modifier = modifier
             .clip(RoundedCornerShape(10.dp))
             .background(background)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = contentColor)
-        Box(
-            modifier = Modifier
-                .size(16.dp)
-                .clip(CircleShape)
-                .background(contentColor.copy(alpha = 0.18f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = "$count", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = contentColor)
-        }
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = contentColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

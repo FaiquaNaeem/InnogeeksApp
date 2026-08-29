@@ -35,7 +35,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.delay
 
 // Diagonal-hatch placeholder for the real event image/logo, which no content
@@ -82,15 +84,14 @@ fun EventImagePlaceholder(
 @Composable
 private fun LearnMoreButton(
     onClick: () -> Unit,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(percent = 50))
-            .background(scheme.surfaceContainer)
-            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(percent = 50))
+            .liquidGlass(hazeState = hazeState, cornerRadius = 999.dp)
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -106,14 +107,12 @@ private fun LearnMoreButton(
 
 // Date badge (day + month) — every card gets one, past or future alike.
 @Composable
-private fun EventDateBadge(day: String, month: String, modifier: Modifier = Modifier) {
+private fun EventDateBadge(day: String, month: String, hazeState: HazeState, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier
             .size(52.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(scheme.surfaceContainer)
-            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(12.dp)),
+            .liquidGlass(hazeState = hazeState, cornerRadius = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -150,15 +149,14 @@ fun EventCard(
     attendees: Int,
     cadence: String,
     onClick: () -> Unit,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(scheme.surfaceContainerHigh)
-            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(18.dp))
+            .liquidGlass(hazeState = hazeState, cornerRadius = 18.dp)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -168,7 +166,7 @@ fun EventCard(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            EventDateBadge(day = day, month = month)
+            EventDateBadge(day = day, month = month, hazeState = hazeState)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = title,
@@ -199,7 +197,7 @@ fun EventCard(
             )
         }
 
-        LearnMoreButton(onClick = onClick)
+        LearnMoreButton(onClick = onClick, hazeState = hazeState)
     }
 }
 
@@ -270,7 +268,8 @@ private fun EventComponentsPreview() {
                 month = "AUG",
                 attendees = 210,
                 cadence = "",
-                onClick = {}
+                onClick = {},
+                hazeState = remember { HazeState() }
             )
             EventPhotoRow()
         }

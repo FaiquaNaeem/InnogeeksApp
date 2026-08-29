@@ -126,7 +126,8 @@ private fun EventListScreen(
                 month = monthLabel(event.date),
                 attendees = event.attendees,
                 cadence = event.cadence,
-                onClick = { onAction(EventsAction.OnEventClick(event.id)) }
+                onClick = { onAction(EventsAction.OnEventClick(event.id)) },
+                hazeState = hazeState
             )
         }
     }

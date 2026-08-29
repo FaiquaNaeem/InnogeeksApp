@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.HourglassTop
-import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material3.Button
@@ -203,18 +202,16 @@ private data class JourneyStageUi(
 private fun RecruitmentStatus.toJourneyStages(): List<JourneyStageUi> {
     val afterDecision = decision != Decision.PENDING
 
+    // Registered and Fee Paid are never independently observable here: per
+    // docs/APP_API_CONTRACT.md, a registration only becomes reachable by this app once it's
+    // already PAID, so `paid` can never actually be false on a screen the app can render. Two
+    // stages for one fact was redundant, so this is one merged stage, not two.
     val stages = mutableListOf(
         JourneyStageUi(
             title = "Registered",
-            subtitle = "Application submitted",
+            subtitle = "Application submitted & ₹50 fee verified",
             state = StageState.DONE,
             icon = Icons.Default.Description
-        ),
-        JourneyStageUi(
-            title = "Fee Paid",
-            subtitle = if (paid) "₹50 payment verified" else "Payment pending",
-            state = if (paid) StageState.DONE else StageState.PENDING,
-            icon = Icons.Default.Payments
         ),
         JourneyStageUi(
             title = "Aptitude Test",

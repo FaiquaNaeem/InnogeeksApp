@@ -1,58 +1,80 @@
 package com.example.innogeeks.feature_resources.presentation.resources
 
 import android.content.res.Configuration
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.innogeeks.core.presentation.components.ExpandableRow
-import com.example.innogeeks.feature_resources.domain.model.ResourceCategory
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.example.innogeeks.core.presentation.components.StatTile
+import com.example.innogeeks.core.presentation.components.liquidGlass
+import com.example.innogeeks.feature_domains.domain.model.Domain
+import com.example.innogeeks.feature_domains.domain.model.DomainStat
 import com.example.innogeeks.feature_resources.domain.model.ResourceItem
 import com.example.innogeeks.feature_resources.domain.model.ResourceType
+import com.example.innogeeks.feature_resources.presentation.resources.components.domainAccent
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import com.example.innogeeks.ui.theme.displayFontFamily
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
+// Nested NavHost scoped to this tab: domain picker -> per-domain feed -> resource detail.
+// MainScaffold's bottom nav lives outside this Box, so it stays put across all three screens.
 @Composable
 fun ResourcesRoot(
     hazeState: HazeState,
     viewModel: ResourcesViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val navController = rememberNavController()
     val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(Unit) {
@@ -63,16 +85,59 @@ fun ResourcesRoot(
         }
     }
 
-    ResourcesScreen(state = state, hazeState = hazeState, onAction = viewModel::onAction)
+    NavHost(
+        navController = navController,
+        startDestination = ResourcesListRoute,
+        enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+        exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
+        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
+        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+    ) {
+        composable<ResourcesListRoute> {
+            ResourcesScreen(
+                state = state,
+                hazeState = hazeState,
+                onAction = viewModel::onAction,
+                onDomainClick = { domainId -> navController.navigate(ResourceBrowserRoute(domainId)) }
+            )
+        }
+        composable<ResourceBrowserRoute> { backStackEntry ->
+            val route: ResourceBrowserRoute = backStackEntry.toRoute()
+            val domain = state.domains.find { it.id == route.domainId }
+            if (domain != null) {
+                ResourceBrowserScreen(
+                    domain = domain,
+                    resources = state.resources.filter { it.domainId == domain.id },
+                    hazeState = hazeState,
+                    onBack = { navController.popBackStack() },
+                    onResourceClick = { resourceId -> navController.navigate(ResourceDetailRoute(resourceId)) }
+                )
+            }
+        }
+        composable<ResourceDetailRoute> { backStackEntry ->
+            val route: ResourceDetailRoute = backStackEntry.toRoute()
+            val resource = state.resources.find { it.id == route.resourceId }
+            if (resource != null) {
+                ResourceDetailScreen(
+                    resource = resource,
+                    hazeState = hazeState,
+                    onBack = { navController.popBackStack() },
+                    onOpenResource = { url -> viewModel.onAction(ResourcesAction.OnResourceItemClicked(url)) }
+                )
+            }
+        }
+    }
 }
 
 @Composable
 fun ResourcesScreen(
     state: ResourcesState,
     hazeState: HazeState,
-    onAction: (ResourcesAction) -> Unit
+    onAction: (ResourcesAction) -> Unit,
+    onDomainClick: (String) -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
+    var query by rememberSaveable { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.isLoading) {
@@ -84,53 +149,112 @@ fun ResourcesScreen(
 
         if (state.error != null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(text = state.error, color = scheme.error)
-                    TextButton(onClick = { onAction(ResourcesAction.OnRetry) }) {
-                        Text("Retry")
-                    }
-                }
+                Text(text = state.error, color = scheme.error)
             }
             return@Box
         }
 
-        LazyColumn(
+        val typeCount = state.resources.map { it.type }.distinct().size
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .hazeSource(hazeState),
-            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 110.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .hazeSource(hazeState)
+                .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 110.dp)
         ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "Resources",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = scheme.onSurface
-                    )
-                    Text(
-                        text = "Guides, links and prep material for the recruitment cycle.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Resources",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface
+                )
+                Text(
+                    text = "Pick a domain — explore, learn, grow.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .liquidGlass(hazeState = hazeState, cornerRadius = 14.dp)
+                    .padding(horizontal = 14.dp, vertical = 11.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = null,
+                    tint = scheme.outline
+                )
+                Box(modifier = Modifier.weight(1f)) {
+                    if (query.isEmpty()) {
+                        Text(
+                            text = "Search resources…",
+                            fontSize = 12.5.sp,
+                            color = scheme.outline
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = scheme.onSurface
+                        ),
+                        cursorBrush = SolidColor(scheme.secondary),
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
 
-            items(items = state.categories, key = { it.id }) { category ->
-                val isExpanded = state.expandedCategoryId == category.id
-                ExpandableRow(
-                    title = category.title,
-                    subtitle = category.description,
-                    isExpanded = isExpanded,
-                    onToggle = { onAction(ResourcesAction.OnCategoryToggled(category.id)) }
-                ) {
-                    ResourceItemList(category = category, onAction = onAction)
+            Spacer(modifier = Modifier.padding(top = 7.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatTile(value = state.domains.size, caption = "Domains", hazeState = hazeState, modifier = Modifier.weight(1f))
+                StatTile(value = state.resources.size, caption = "Resources", hazeState = hazeState, modifier = Modifier.weight(1f))
+                StatTile(value = typeCount, caption = "Types", hazeState = hazeState, modifier = Modifier.weight(1f))
+            }
+
+            Spacer(modifier = Modifier.padding(top = 8.dp))
+
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Every domain always stays in the grid (so rows never reflow while typing) —
+                // a non-matching card just dims instead of being removed, same as the mock.
+                state.domains.chunked(2).forEach { rowDomains ->
+                    Row(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        rowDomains.forEach { domain ->
+                            val matchesQuery = query.isBlank() || domain.name.contains(query, ignoreCase = true)
+                            ResourceDomainCard(
+                                domain = domain,
+                                resourceCount = state.resources.count { it.domainId == domain.id },
+                                hazeState = hazeState,
+                                onClick = { onDomainClick(domain.id) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .alpha(if (matchesQuery) 1f else 0.35f)
+                            )
+                        }
+                        if (rowDomains.size < 2) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
@@ -138,127 +262,112 @@ fun ResourcesScreen(
 }
 
 @Composable
-private fun ResourceItemList(
-    category: ResourceCategory,
-    onAction: (ResourcesAction) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        category.items.forEach { item ->
-            ResourceItemRow(
-                item = item,
-                onClick = { onAction(ResourcesAction.OnResourceItemClicked(item.url)) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun ResourceItemRow(
-    item: ResourceItem,
-    onClick: () -> Unit
+private fun ResourceDomainCard(
+    domain: Domain,
+    resourceCount: Int,
+    hazeState: HazeState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    val accent = domainAccent(domain.accentIndex)
+
+    Box(
+        modifier = modifier
+            .liquidGlass(hazeState = hazeState, cornerRadius = 22.dp)
+            .clickable(onClick = onClick)
+            .padding(start = 16.dp, end = 14.dp, top = 16.dp, bottom = 14.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(scheme.secondaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = item.type.icon(),
-                contentDescription = null,
-                tint = scheme.onSecondaryContainer,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-        Text(
-            text = item.title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = scheme.onSurface
+                .fillMaxHeight()
+                .padding(vertical = 2.dp)
+                .align(Alignment.CenterStart)
+                .width(3.dp)
+                .background(accent.copy(alpha = 0.7f), shape = RoundedCornerShape(3.dp))
         )
+
+        Column(modifier = Modifier.fillMaxSize().padding(start = 8.dp)) {
+            Text(text = domain.emoji, fontSize = 24.sp)
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = domain.name,
+                fontFamily = displayFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                lineHeight = 17.sp,
+                color = scheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = domain.tagline,
+                fontSize = 9.5.sp,
+                color = scheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "$resourceCount resource${if (resourceCount != 1) "s" else ""}",
+                    fontSize = 8.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
+                    color = accent
+                )
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(accent.copy(alpha = 0.16f))
+                        .border(1.dp, accent.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(11.dp)
+                    )
+                }
+            }
+        }
     }
 }
 
-private fun ResourceType.icon() = when (this) {
-    ResourceType.ARTICLE -> Icons.AutoMirrored.Filled.Article
-    ResourceType.VIDEO -> Icons.Filled.PlayCircle
-    ResourceType.PDF -> Icons.Filled.PictureAsPdf
-    ResourceType.LINK -> Icons.Filled.Link
-}
-
-private val previewCategories = listOf(
-    ResourceCategory(
-        id = "recruitment-prep",
-        title = "Recruitment Prep",
-        description = "What to expect before your test and interview.",
-        items = listOf(
-            ResourceItem("1", "Innogeeks Recruitment Guide", ResourceType.ARTICLE, ""),
-            ResourceItem("2", "Recruitment FAQ", ResourceType.ARTICLE, "")
-        )
-    ),
-    ResourceCategory(
-        id = "club-handbook",
-        title = "Club Handbook",
-        description = "How Innogeeks runs — domains, events, and expectations.",
-        items = listOf(
-            ResourceItem("3", "Member Handbook (PDF)", ResourceType.PDF, ""),
-            ResourceItem("4", "Join the Discord", ResourceType.LINK, "")
-        )
-    )
+private val previewResources = listOf(
+    ResourceItem("w1", "webd", ResourceType.LINK, "🌐", "The Odin Project", "Full-stack curriculum.", "Ritesh", "Aug 2026", "Beginner", "#"),
+    ResourceItem("w2", "webd", ResourceType.PDF, "📄", "CSS Cheatsheet", "Layout reference.", "Neha", "Jul 2026", "Beginner", "#"),
+    ResourceItem("a1", "appd", ResourceType.LINK, "🔗", "Compose Docs", "Official docs.", "Faiq", "Aug 2026", "Beginner", "#")
 )
+
+private val previewDomains = listOf(
+    Domain("webd", "Web Dev", "React, Node & everything between", "🌐", 0, listOf(DomainStat(18, "Members")), emptyList(), emptyList(), emptyList()),
+    Domain("appd", "App Dev", "Native & cross-platform builders", "📱", 1, listOf(DomainStat(14, "Members")), emptyList(), emptyList(), emptyList())
+)
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ResourcesScreenPreview() {
+    InnogeeksTheme {
+        ResourcesScreen(
+            state = ResourcesState(isLoading = false, domains = previewDomains, resources = previewResources),
+            hazeState = HazeState(),
+            onAction = {},
+            onDomainClick = {}
+        )
+    }
+}
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
 @Composable
 private fun ResourcesScreenLoadingPreview() {
     InnogeeksTheme {
-        ResourcesScreen(state = ResourcesState(isLoading = true), hazeState = HazeState(), onAction = {})
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
-@Composable
-private fun ResourcesScreenErrorPreview() {
-    InnogeeksTheme {
-        ResourcesScreen(
-            state = ResourcesState(isLoading = false, error = "Failed to load resources. Please try again."),
-            hazeState = HazeState(),
-            onAction = {}
-        )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
-@Composable
-private fun ResourcesScreenCollapsedPreview() {
-    InnogeeksTheme {
-        ResourcesScreen(
-            state = ResourcesState(isLoading = false, categories = previewCategories),
-            hazeState = HazeState(),
-            onAction = {}
-        )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
-@Composable
-private fun ResourcesScreenExpandedPreview() {
-    InnogeeksTheme {
-        ResourcesScreen(
-            state = ResourcesState(
-                isLoading = false,
-                categories = previewCategories,
-                expandedCategoryId = "recruitment-prep"
-            ),
-            hazeState = HazeState(),
-            onAction = {}
-        )
+        ResourcesScreen(state = ResourcesState(), hazeState = HazeState(), onAction = {}, onDomainClick = {})
     }
 }

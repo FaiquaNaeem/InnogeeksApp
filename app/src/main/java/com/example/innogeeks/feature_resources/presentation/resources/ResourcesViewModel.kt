@@ -2,6 +2,7 @@ package com.example.innogeeks.feature_resources.presentation.resources
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.innogeeks.feature_domains.domain.DomainsRepository
 import com.example.innogeeks.feature_resources.domain.ResourcesRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +12,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ResourcesViewModel(
-    private val repository: ResourcesRepository
+    private val domainsRepository: DomainsRepository,
+    private val resourcesRepository: ResourcesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ResourcesState())
@@ -21,50 +23,44 @@ class ResourcesViewModel(
     val events = _events.receiveAsFlow()
 
     init {
-        loadCategories()
+        load()
     }
 
-    private fun loadCategories() {
+    private fun load() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            repository.getResourceCategories()
-                .onSuccess { categories ->
-                    _state.update { it.copy(isLoading = false, categories = categories) }
+            val domainsResult = domainsRepository.getDomains()
+            val resourcesResult = resourcesRepository.getResources()
+
+            if (domainsResult.isSuccess && resourcesResult.isSuccess) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        domains = domainsResult.getOrThrow(),
+                        resources = resourcesResult.getOrThrow()
+                    )
                 }
-                .onFailure {
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error = "Failed to load resources. Please try again."
-                        )
-                    }
+            } else {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to load resources. Please try again."
+                    )
                 }
+            }
         }
     }
 
     fun onAction(action: ResourcesAction) {
         when (action) {
-            // Tapping the open category closes it; tapping another swaps which one is open.
-            is ResourcesAction.OnCategoryToggled -> {
-                _state.update {
-                    it.copy(
-                        expandedCategoryId = if (it.expandedCategoryId == action.categoryId) {
-                            null
-                        } else {
-                            action.categoryId
-                        }
-                    )
-                }
-            }
-
             is ResourcesAction.OnResourceItemClicked -> {
                 viewModelScope.launch {
                     _events.send(ResourcesEvent.OpenUrl(action.url))
                 }
             }
 
-            ResourcesAction.OnRetry -> loadCategories()
+            ResourcesAction.OnRetry -> load()
         }
     }
 }

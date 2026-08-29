@@ -15,8 +15,10 @@ class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
                 collegeEmail = "setup@kiet.edu",
                 fullName = "Atul Kumar",
                 phone = "+91 98765 43210",
-                batch = "2023-27",
-                year = 3,
+                // Phase 1 only recruits first-years, so role is always FIRST_YEAR_STUDENT
+                // (APP_API_CONTRACT.md §12) — batch/year must describe an actual first-year.
+                batch = "2025-29",
+                year = 1,
                 role = "FIRST_YEAR_STUDENT"
             )
         )

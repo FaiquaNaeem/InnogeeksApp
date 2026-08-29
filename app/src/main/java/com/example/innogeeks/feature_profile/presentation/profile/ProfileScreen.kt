@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.innogeeks.core.domain.session.Session
 import com.example.innogeeks.core.presentation.components.ExpandableRow
 import com.example.innogeeks.core.presentation.components.SectionLabel
+import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_profile.presentation.profile.components.ProfileHero
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
@@ -89,9 +90,10 @@ fun ProfileScreen(
             }
 
             when (val session = state.session) {
-                Session.Guest -> guestProfile(onAction = onAction)
+                Session.Guest -> guestProfile(hazeState = hazeState, onAction = onAction)
                 is Session.Registered -> registeredProfile(
                     state = state,
+                    hazeState = hazeState,
                     onAction = onAction
                 )
             }
@@ -107,7 +109,7 @@ fun ProfileScreen(
 }
 
 // Guest gets an honest login CTA and club info — no invented student, no stat tiles.
-private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
+private fun LazyListScope.guestProfile(hazeState: HazeState, onAction: (ProfileAction) -> Unit) {
     item {
         ProfileHero(
             initials = "?",
@@ -122,7 +124,8 @@ private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
         InfoPanel(
             title = "Already registered?",
             body = "Accounts are created for students who completed the offline registration. " +
-                "Check your inbox — we email your college ID and a password."
+                "Check your inbox — we email your college ID and a password.",
+            hazeState = hazeState
         )
     }
 
@@ -131,6 +134,7 @@ private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
             text = "Log In",
             isPrimary = true,
             onClick = { onAction(ProfileAction.OnLoginClick) },
+            hazeState = hazeState,
             modifier = Modifier.padding(top = 2.dp)
         )
     }
@@ -141,7 +145,8 @@ private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
         InfoPanel(
             title = "A student tech community at KIET",
             body = "We build, break and ship things together — hackathons, workshops, " +
-                "research projects and open source, run entirely by students."
+                "research projects and open source, run entirely by students.",
+            hazeState = hazeState
         )
     }
 
@@ -149,7 +154,8 @@ private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
         InfoPanel(
             title = "Domains",
             body = "Web Dev · App Dev · AI / ML · AR / VR · Cybersecurity · Design. " +
-                "Open the Domains tab to see what each one works on."
+                "Open the Domains tab to see what each one works on.",
+            hazeState = hazeState
         )
     }
 
@@ -157,7 +163,8 @@ private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
         InfoPanel(
             title = "How to join",
             body = "Recruitment opens once a year. Register during the offline drive, " +
-                "clear the aptitude test and the interview, and you're in."
+                "clear the aptitude test and the interview, and you're in.",
+            hazeState = hazeState
         )
     }
 }
@@ -165,6 +172,7 @@ private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
 // Registered user displays 6 profile fields from GET /me (§12).
 private fun LazyListScope.registeredProfile(
     state: ProfileState,
+    hazeState: HazeState,
     onAction: (ProfileAction) -> Unit
 ) {
     val session = state.session as? Session.Registered ?: return
@@ -200,7 +208,8 @@ private fun LazyListScope.registeredProfile(
         item {
             InfoPanel(
                 title = "Couldn't load profile",
-                body = error.asString()
+                body = error.asString(),
+                hazeState = hazeState
             )
         }
         item {
@@ -208,6 +217,7 @@ private fun LazyListScope.registeredProfile(
                 text = "Retry",
                 isPrimary = true,
                 onClick = { onAction(ProfileAction.OnRetryClick) },
+                hazeState = hazeState,
                 modifier = Modifier.padding(top = 6.dp)
             )
         }
@@ -218,6 +228,30 @@ private fun LazyListScope.registeredProfile(
     if (profile != null) {
         item {
             ExpandableRow(
+                title = "Contact & Club",
+                subtitle = listOfNotNull(
+                    profile.phone,
+                    profile.role.replace('_', ' ')
+                ).take(1).joinToString(" • ").ifEmpty { "Role: ${profile.role.replace('_', ' ')}" },
+                isExpanded = state.expandedSection == ProfileSection.CLUB,
+                onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.CLUB)) },
+                hazeState = hazeState,
+                leading = {
+                    IconChip(emoji = "🚀", background = MaterialTheme.colorScheme.secondaryContainer)
+                }
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    profile.phone?.let { ProfileField(label = "Phone", value = it) }
+                    ProfileField(label = "Role", value = profile.role.replace('_', ' '))
+                }
+            }
+        }
+
+        item {
+            ExpandableRow(
                 title = "Academic Details",
                 subtitle = listOfNotNull(
                     profile.batch,
@@ -225,6 +259,7 @@ private fun LazyListScope.registeredProfile(
                 ).joinToString(" • ").ifEmpty { "Not provided" },
                 isExpanded = state.expandedSection == ProfileSection.ACADEMIC,
                 onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ACADEMIC)) },
+                hazeState = hazeState,
                 leading = { IconChip(emoji = "🎓", background = MaterialTheme.colorScheme.primary) }
             ) {
                 Column(
@@ -243,29 +278,6 @@ private fun LazyListScope.registeredProfile(
                 }
             }
         }
-
-        item {
-            ExpandableRow(
-                title = "Contact & Club",
-                subtitle = listOfNotNull(
-                    profile.phone,
-                    profile.role.replace('_', ' ')
-                ).take(1).joinToString(" • ").ifEmpty { "Role: ${profile.role.replace('_', ' ')}" },
-                isExpanded = state.expandedSection == ProfileSection.CLUB,
-                onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.CLUB)) },
-                leading = {
-                    IconChip(emoji = "🚀", background = MaterialTheme.colorScheme.secondaryContainer)
-                }
-            ) {
-                Column(
-                    modifier = Modifier.padding(vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    profile.phone?.let { ProfileField(label = "Phone", value = it) }
-                    ProfileField(label = "Role", value = profile.role.replace('_', ' '))
-                }
-            }
-        }
     }
 
     item {
@@ -273,6 +285,7 @@ private fun LazyListScope.registeredProfile(
             text = "Log Out",
             isPrimary = false,
             onClick = { onAction(ProfileAction.OnLogOutClick) },
+            hazeState = hazeState,
             modifier = Modifier.padding(top = 6.dp)
         )
     }
@@ -333,15 +346,14 @@ private fun ProfileField(
 private fun InfoPanel(
     title: String,
     body: String,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(scheme.surfaceContainerHigh)
-            .border(1.dp, scheme.outlineVariant, RoundedCornerShape(18.dp))
+            .liquidGlass(hazeState = hazeState, cornerRadius = 18.dp)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -382,18 +394,22 @@ private fun ProfileButton(
     text: String,
     isPrimary: Boolean,
     onClick: () -> Unit,
+    hazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(percent = 50))
-            .background(if (isPrimary) scheme.primary else scheme.surfaceContainerHigh)
-            .border(
-                1.dp,
-                if (isPrimary) scheme.primary else scheme.outlineVariant,
-                RoundedCornerShape(percent = 50)
+            .then(
+                if (isPrimary) {
+                    Modifier
+                        .clip(RoundedCornerShape(percent = 50))
+                        .background(scheme.primary)
+                        .border(1.dp, scheme.primary, RoundedCornerShape(percent = 50))
+                } else {
+                    Modifier.liquidGlass(hazeState = hazeState, cornerRadius = 999.dp)
+                }
             )
             .clickable(onClick = onClick)
             .padding(vertical = 11.dp),
@@ -456,8 +472,8 @@ private fun ProfileScreenRegisteredExpandedPreview() {
                     collegeEmail = "atul@kiet.edu",
                     fullName = "Atul Kumar",
                     phone = "+91 98765 43210",
-                    batch = "2023-27",
-                    year = 3,
+                    batch = "2024-28",
+                    year = 2,
                     role = "COORDINATOR"
                 )
             ),

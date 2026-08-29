@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import dev.chrisbanes.haze.HazeState
 
 // Slot-based accordion shared by Domains, Past Events and Profile.
 // State is hoisted so a parent can enforce "only one row open at a time".
@@ -45,6 +46,7 @@ fun ExpandableRow(
     subtitle: String,
     isExpanded: Boolean,
     onToggle: () -> Unit,
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
     leading: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
@@ -79,8 +81,8 @@ fun ExpandableRow(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .liquidGlass(hazeState = hazeState, cornerRadius = 14.dp)
+            // Expand-state glow, layered on top of the glass modifier's own border.
             .border(1.dp, borderColor, RoundedCornerShape(14.dp))
             // Animates the height jump when the content block is added or removed.
             .animateContentSize(animationSpec = tween(400))
@@ -143,6 +145,7 @@ private fun ExpandableRowCollapsedPreview() {
             subtitle = "Full-stack web engineering",
             isExpanded = false,
             onToggle = {},
+            hazeState = remember { HazeState() },
             modifier = Modifier.padding(16.dp)
         ) {
             Text("Hidden content")
@@ -159,6 +162,7 @@ private fun ExpandableRowExpandedPreview() {
             subtitle = "Full-stack web engineering",
             isExpanded = true,
             onToggle = {},
+            hazeState = remember { HazeState() },
             modifier = Modifier.padding(16.dp),
             leading = {
                 Text(
@@ -187,6 +191,7 @@ private fun ExpandableRowInteractivePreview() {
             subtitle = "Models, data and inference",
             isExpanded = expanded,
             onToggle = { expanded = !expanded },
+            hazeState = remember { HazeState() },
             modifier = Modifier.padding(16.dp)
         ) {
             Text(

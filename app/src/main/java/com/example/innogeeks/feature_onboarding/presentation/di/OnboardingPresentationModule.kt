@@ -2,6 +2,9 @@ package com.example.innogeeks.feature_onboarding.presentation
 
 import com.example.innogeeks.feature_onboarding.presentation.auth.emailgate.EmailGateViewModel
 import com.example.innogeeks.feature_onboarding.presentation.auth.passwordlogin.PasswordLoginViewModel
+import com.example.innogeeks.feature_onboarding.presentation.auth.passwordreset.PasswordResetCompleteViewModel
+import com.example.innogeeks.feature_onboarding.presentation.auth.passwordreset.PasswordResetRequestViewModel
+import com.example.innogeeks.feature_onboarding.presentation.auth.passwordreset.PasswordResetVerifyCodeViewModel
 import com.example.innogeeks.feature_onboarding.presentation.auth.setpassword.SetPasswordViewModel
 import com.example.innogeeks.feature_onboarding.presentation.auth.verifycode.VerifyCodeViewModel
 import com.example.innogeeks.feature_onboarding.presentation.login.LoginViewModel
@@ -34,5 +37,24 @@ val onboardingPresentationModule = module {
     }
     viewModel { params ->
         PasswordLoginViewModel(collegeEmail = params.get(), authFlowRepository = get())
+    }
+
+    // Password reset flow. Mirrors the first-login verification flow structure.
+    viewModel { params ->
+        PasswordResetRequestViewModel(authFlowRepository = get(), authValidator = get())
+    }
+    viewModel { params ->
+        PasswordResetVerifyCodeViewModel(
+            collegeEmail = params.get(),
+            authFlowRepository = get()
+        )
+    }
+    viewModel { params ->
+        PasswordResetCompleteViewModel(
+            collegeEmail = params.get(),
+            passwordResetToken = params.get(),
+            authFlowRepository = get(),
+            authValidator = get()
+        )
     }
 }

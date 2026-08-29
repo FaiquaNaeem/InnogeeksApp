@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -90,8 +91,7 @@ fun ProfileScreen(
             when (val session = state.session) {
                 Session.Guest -> guestProfile(onAction = onAction)
                 is Session.Registered -> registeredProfile(
-                    collegeEmail = session.collegeEmail,
-                    expandedSection = state.expandedSection,
+                    state = state,
                     onAction = onAction
                 )
             }
@@ -162,53 +162,109 @@ private fun LazyListScope.guestProfile(onAction: (ProfileAction) -> Unit) {
     }
 }
 
-// Only collegeEmail is real here; the accordions stay empty until a /me endpoint exists.
+// Registered user displays 6 profile fields from GET /me (§12).
 private fun LazyListScope.registeredProfile(
-    collegeEmail: String,
-    expandedSection: ProfileSection?,
+    state: ProfileState,
     onAction: (ProfileAction) -> Unit
 ) {
+    val session = state.session as? Session.Registered ?: return
+    val profile = state.profile
+
     item {
         ProfileHero(
-            initials = collegeEmail.toInitials(),
-            name = collegeEmail.substringBefore('@'),
-            subtitle = collegeEmail,
-            roleChip = "Registered",
+            initials = (profile?.fullName ?: session.collegeEmail).toInitials(),
+            name = profile?.fullName ?: session.collegeEmail.substringBefore('@'),
+            subtitle = session.collegeEmail,
+            roleChip = profile?.role?.replace('_', ' ') ?: "Registered",
             modifier = Modifier.padding(vertical = 6.dp)
         )
     }
 
-    item {
-        InfoPanel(
-            title = "Recruitment in progress",
-            body = "Your registration is confirmed. Test and interview details will show up " +
-                "here once they're scheduled."
-        )
-    }
-
-    item {
-        ExpandableRow(
-            title = "Academic Details",
-            subtitle = "Enrollment, branch & semester",
-            isExpanded = expandedSection == ProfileSection.ACADEMIC,
-            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ACADEMIC)) },
-            leading = { IconChip(emoji = "🎓", background = MaterialTheme.colorScheme.primary) }
-        ) {
-            AwaitingDataRow()
-        }
-    }
-
-    item {
-        ExpandableRow(
-            title = "Club Involvement",
-            subtitle = "Role, domains & research",
-            isExpanded = expandedSection == ProfileSection.CLUB,
-            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.CLUB)) },
-            leading = {
-                IconChip(emoji = "🚀", background = MaterialTheme.colorScheme.secondaryContainer)
+    // Loading state
+    if (state.isLoadingProfile) {
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
-        ) {
-            AwaitingDataRow()
+        }
+        return
+    }
+
+    // Error state
+    state.profileError?.let { error ->
+        item {
+            InfoPanel(
+                title = "Couldn't load profile",
+                body = error.asString()
+            )
+        }
+        item {
+            ProfileButton(
+                text = "Retry",
+                isPrimary = true,
+                onClick = { onAction(ProfileAction.OnRetryClick) },
+                modifier = Modifier.padding(top = 6.dp)
+            )
+        }
+        return
+    }
+
+    // Success state with profile data
+    if (profile != null) {
+        item {
+            ExpandableRow(
+                title = "Academic Details",
+                subtitle = listOfNotNull(
+                    profile.batch,
+                    profile.year?.let { "Year $it" }
+                ).joinToString(" • ").ifEmpty { "Not provided" },
+                isExpanded = state.expandedSection == ProfileSection.ACADEMIC,
+                onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ACADEMIC)) },
+                leading = { IconChip(emoji = "🎓", background = MaterialTheme.colorScheme.primary) }
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    profile.batch?.let { ProfileField(label = "Batch", value = it) }
+                    profile.year?.let { ProfileField(label = "Year", value = it.toString()) }
+                    if (profile.batch == null && profile.year == null) {
+                        Text(
+                            text = "No academic details provided yet.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            ExpandableRow(
+                title = "Contact & Club",
+                subtitle = listOfNotNull(
+                    profile.phone,
+                    profile.role.replace('_', ' ')
+                ).take(1).joinToString(" • ").ifEmpty { "Role: ${profile.role.replace('_', ' ')}" },
+                isExpanded = state.expandedSection == ProfileSection.CLUB,
+                onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.CLUB)) },
+                leading = {
+                    IconChip(emoji = "🚀", background = MaterialTheme.colorScheme.secondaryContainer)
+                }
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    profile.phone?.let { ProfileField(label = "Phone", value = it) }
+                    ProfileField(label = "Role", value = profile.role.replace('_', ' '))
+                }
+            }
         }
     }
 
@@ -251,6 +307,26 @@ private fun AwaitingDataRow(modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier.padding(vertical = 6.dp)
     )
+}
+
+@Composable
+private fun ProfileField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 }
 
 @Composable
@@ -375,7 +451,45 @@ private fun ProfileScreenRegisteredExpandedPreview() {
         ProfileScreen(
             state = ProfileState(
                 session = registeredSession,
-                expandedSection = ProfileSection.ACADEMIC
+                expandedSection = ProfileSection.ACADEMIC,
+                profile = com.example.innogeeks.feature_profile.domain.model.StudentProfile(
+                    collegeEmail = "atul@kiet.edu",
+                    fullName = "Atul Kumar",
+                    phone = "+91 98765 43210",
+                    batch = "2023-27",
+                    year = 3,
+                    role = "COORDINATOR"
+                )
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 820)
+@Composable
+private fun ProfileScreenLoadingPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                isLoadingProfile = true
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 820)
+@Composable
+private fun ProfileScreenErrorPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                profileError = com.example.innogeeks.core.presentation.UiText.DynamicString("Network error")
             ),
             hazeState = HazeState(),
             onAction = {}

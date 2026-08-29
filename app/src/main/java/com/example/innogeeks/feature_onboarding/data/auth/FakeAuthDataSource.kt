@@ -13,7 +13,8 @@ class FakeAuthDataSource : AuthRemoteDataSource {
 
     private data class Account(
         val eligible: Boolean,
-        var password: String? = null
+        var password: String? = null,
+        var resetToken: String? = null
     )
 
     // Three accounts so every branch of the flow is reachable on a device.
@@ -101,6 +102,61 @@ class FakeAuthDataSource : AuthRemoteDataSource {
             return apiError(AuthApiError.INVALID_CREDENTIALS)
         }
         return Result.Success(fakeToken(email))
+    }
+
+    override suspend fun requestPasswordResetCode(collegeEmail: String): Result<Unit, AuthError> {
+        delay(NETWORK_DELAY)
+        val account = accounts[collegeEmail.lowercase()] ?: return denied()
+        if (!account.eligible) return denied()
+        if (account.password == null) return apiError(AuthApiError.PASSWORD_NOT_SET)
+        // Reset code requested, reset attempt counter
+        failedAttempts = 0
+        return Result.Success(Unit)
+    }
+
+    override suspend fun verifyResetCode(
+        collegeEmail: String,
+        code: String
+    ): Result<String, AuthError> {
+        delay(NETWORK_DELAY)
+        val account = accounts[collegeEmail.lowercase()] ?: return denied()
+        if (!account.eligible) return denied()
+        if (account.password == null) return apiError(AuthApiError.PASSWORD_NOT_SET)
+
+        if (code != FIXED_CODE || failedAttempts >= MAX_ATTEMPTS) {
+            failedAttempts++
+            return apiError(AuthApiError.PASSWORD_RESET_CODE_INVALID)
+        }
+
+        failedAttempts = 0
+        val token = "fake-reset-token-$collegeEmail"
+        account.resetToken = token
+        return Result.Success(token)
+    }
+
+    override suspend fun completePasswordReset(
+        passwordResetToken: String,
+        password: String
+    ): Result<String, AuthError> {
+        delay(NETWORK_DELAY)
+        if (password.length !in MIN_PASSWORD..MAX_PASSWORD) {
+            return apiError(AuthApiError.VALIDATION_ERROR)
+        }
+
+        // Find account by matching reset token
+        val email = accounts.entries.firstOrNull { it.value.resetToken == passwordResetToken }?.key
+            ?: return apiError(AuthApiError.PASSWORD_RESET_TOKEN_INVALID)
+
+        val account = accounts[email]!!
+        account.password = password
+        account.resetToken = null // Single-use token consumed
+        return Result.Success(fakeToken(email))
+    }
+
+    override suspend fun logout(): Result<Unit, AuthError> {
+        delay(NETWORK_DELAY)
+        // Fake implementation just returns success - token revocation happens in SessionRepository
+        return Result.Success(Unit)
     }
 
     private fun denied() = apiError(AuthApiError.APP_ACCESS_DENIED)

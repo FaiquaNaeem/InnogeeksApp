@@ -3,7 +3,7 @@ package com.example.innogeeks.feature_onboarding.domain.auth
 import com.example.innogeeks.core.domain.util.EmptyResult
 import com.example.innogeeks.core.domain.util.Result
 
-// What the four auth screens talk to. Deliberately returns no token: the access token is
+// What the auth screens talk to. Deliberately returns no token: the access token is
 // stored inside the data layer, so presentation can never see or log it (§9).
 interface AuthFlowRepository {
 
@@ -21,4 +21,18 @@ interface AuthFlowRepository {
     ): EmptyResult<AuthError>
 
     suspend fun login(collegeEmail: String, password: String): EmptyResult<AuthError>
+
+    // Password reset flow (§10) - mirrors first-login flow
+    suspend fun requestPasswordResetCode(collegeEmail: String): EmptyResult<AuthError>
+
+    suspend fun verifyResetCode(collegeEmail: String, code: String): Result<String, AuthError>
+
+    suspend fun completePasswordReset(
+        collegeEmail: String,
+        passwordResetToken: String,
+        password: String
+    ): EmptyResult<AuthError>
+
+    // Logout (§11) - revokes token server-side
+    suspend fun logout(): EmptyResult<AuthError>
 }

@@ -6,4 +6,5 @@ sealed interface ProfileAction {
     data object OnLogOutClick : ProfileAction
     data object OnLogOutConfirmed : ProfileAction
     data object OnLogOutDismissed : ProfileAction
+    data object OnRetryClick : ProfileAction
 }

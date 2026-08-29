@@ -14,6 +14,11 @@ enum class AuthApiError : Error {
     PASSWORD_SETUP_NOT_ALLOWED,
     EMAIL_QUEUE_UNAVAILABLE,
     INVALID_CREDENTIALS,
+    PASSWORD_NOT_SET,  // §10.1 - password reset called before first-login setup
+    PASSWORD_RESET_COOLDOWN,  // §10.1 - resend cooldown for reset codes
+    PASSWORD_RESET_CODE_INVALID,  // §10.2 - reset code wrong/expired/consumed
+    PASSWORD_RESET_TOKEN_INVALID,  // §10.3 - reset token wrong/expired/used
+    UNAUTHORIZED,  // §9 - token expired/invalid/missing
     UNSUPPORTED;
 
     companion object {

@@ -76,6 +76,9 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
+    // kotlinx-datetime — java.time needs desugaring below minSdk 24; this doesn't
+    implementation(libs.kotlinx.datetime)
+
     // Room — local database (offline-first source of truth)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

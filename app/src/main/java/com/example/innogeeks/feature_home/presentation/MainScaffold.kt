@@ -1,10 +1,15 @@
 package com.example.innogeeks.feature_home.presentation
 
 import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -99,6 +105,8 @@ fun MainScaffold(
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val hazeState = remember { HazeState() }
+    var showBottomBar by remember { mutableStateOf(true) }
+    LaunchedEffect(selectedTab) { showBottomBar = true }
 
     // Determine tab layout based on session
     val tabs = when (session) {
@@ -121,8 +129,8 @@ fun MainScaffold(
                             onNavigateToProfile = { selectedTab = 3 },
                             onNavigateToAuth = onNavigateToAuth
                         )
-                        1 -> DomainsRoot(hazeState = hazeState)
-                        2 -> EventsRoot(hazeState = hazeState)
+                        1 -> DomainsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })
+                        2 -> EventsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })
                         3 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
                     }
                 }
@@ -132,25 +140,31 @@ fun MainScaffold(
                             hazeState = hazeState,
                             onNavigateToResources = { selectedTab = 2 }
                         )
-                        1 -> DomainsRoot(hazeState = hazeState)
+                        1 -> DomainsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })
                         2 -> ResourcesRoot(hazeState = hazeState)
-                        3 -> EventsRoot(hazeState = hazeState)
+                        3 -> EventsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })
                         4 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
                     }
                 }
             }
         }
 
-        // Floating Glassmorphic Bottom Navigation Bar
-        InnogeeksBottomNav(
-            tabs = tabs,
-            selectedTab = selectedTab,
-            onTabSelected = { selectedTab = it },
-            hazeState = hazeState,
+        // Floating Glassmorphic Bottom Navigation Bar — hidden while a detail page is open.
+        AnimatedVisibility(
+            visible = showBottomBar,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-        )
+        ) {
+            InnogeeksBottomNav(
+                tabs = tabs,
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it },
+                hazeState = hazeState
+            )
+        }
     }
 }
 

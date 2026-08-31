@@ -40,14 +40,6 @@ class EventsViewModel(
 
     fun onAction(action: EventsAction) {
         when (action) {
-            is EventsAction.OnEventClick -> _state.update {
-                it.copy(selectedEventId = action.eventId)
-            }
-
-            EventsAction.OnBackFromDetail -> _state.update {
-                it.copy(selectedEventId = null)
-            }
-
             EventsAction.OnRetry -> loadEvents()
         }
     }

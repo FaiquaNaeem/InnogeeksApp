@@ -1,20 +1,25 @@
 package com.example.innogeeks.feature_events.presentation.events
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,38 +27,93 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.toRoute
+import com.example.innogeeks.R
+import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_events.domain.model.ClubEvent
 import com.example.innogeeks.feature_events.presentation.events.components.EventCard
+import com.example.innogeeks.feature_events.presentation.events.components.EventImage
 import com.example.innogeeks.feature_events.presentation.events.components.EventImagePlaceholder
 import com.example.innogeeks.feature_events.presentation.events.components.EventPhotoRow
+import com.example.innogeeks.feature_events.presentation.events.components.ZoomableImageDialog
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.datetime.LocalDate
 import org.koin.androidx.compose.koinViewModel
 
+// Nested NavHost scoped to just this tab's content area — MainScaffold's bottom nav
+// lives outside this Box, so the list/detail pair slide underneath it. Bottom-bar
+// visibility itself is reported up via onBottomBarVisibilityChanged (see MainScaffold).
 @Composable
 fun EventsRoot(
     hazeState: HazeState,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     viewModel: EventsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    EventsScreen(state = state, hazeState = hazeState, onAction = viewModel::onAction)
+    val navController = rememberNavController()
+
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(backStackEntry) {
+        onBottomBarVisibilityChanged(backStackEntry?.destination?.hasRoute<EventDetailRoute>() != true)
+    }
+
+    NavHost(
+        navController = navController,
+        startDestination = EventListRoute,
+        enterTransition = { slideInHorizontally(initialOffsetX = { it }) },
+        exitTransition = { slideOutHorizontally(targetOffsetX = { -it }) },
+        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it }) },
+        popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) }
+    ) {
+        composable<EventListRoute> {
+            EventsScreen(
+                state = state,
+                hazeState = hazeState,
+                onAction = viewModel::onAction,
+                onEventClick = { eventId -> navController.navigate(EventDetailRoute(eventId)) }
+            )
+        }
+        composable<EventDetailRoute> { detailBackStackEntry ->
+            val route: EventDetailRoute = detailBackStackEntry.toRoute()
+            val event = state.events.find { it.id == route.eventId }
+            if (event != null) {
+                EventDetailScreen(
+                    event = event,
+                    hazeState = hazeState,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+        }
+    }
 }
 
 @Composable
 fun EventsScreen(
     state: EventsState,
     hazeState: HazeState,
-    onAction: (EventsAction) -> Unit
+    onAction: (EventsAction) -> Unit,
+    onEventClick: (String) -> Unit = {}
 ) {
     val scheme = MaterialTheme.colorScheme
 
@@ -72,16 +132,7 @@ fun EventsScreen(
             return@Box
         }
 
-        val selectedEvent = state.selectedEvent
-        if (selectedEvent != null) {
-            EventDetailScreen(
-                event = selectedEvent,
-                hazeState = hazeState,
-                onBackClick = { onAction(EventsAction.OnBackFromDetail) }
-            )
-        } else {
-            EventListScreen(state = state, hazeState = hazeState, onAction = onAction)
-        }
+        EventListScreen(state = state, hazeState = hazeState, onEventClick = onEventClick)
     }
 }
 
@@ -89,7 +140,7 @@ fun EventsScreen(
 private fun EventListScreen(
     state: EventsState,
     hazeState: HazeState,
-    onAction: (EventsAction) -> Unit
+    onEventClick: (String) -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
 
@@ -126,7 +177,8 @@ private fun EventListScreen(
                 month = monthLabel(event.date),
                 attendees = event.attendees,
                 cadence = event.cadence,
-                onClick = { onAction(EventsAction.OnEventClick(event.id)) },
+                cardImageRes = event.cardImageRes,
+                onClick = { onEventClick(event.id) },
                 hazeState = hazeState
             )
         }
@@ -140,42 +192,70 @@ private fun EventDetailScreen(
     onBackClick: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
+    val uriHandler = LocalUriHandler.current
+    var zoomedImageRes by remember { mutableStateOf<Int?>(null) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .hazeSource(hazeState)
-            .padding(horizontal = 18.dp, vertical = 8.dp),
+            .padding(horizontal = 18.dp, vertical = 8.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(scheme.surfaceContainerHigh)
-                    .clickable(onClick = onBackClick),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = scheme.onSurface
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .liquidGlass(hazeState = hazeState, cornerRadius = 999.dp)
+                        .clickable(onClick = onBackClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = scheme.onSurface
+                    )
+                }
+                Text(
+                    text = "Event details",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface
                 )
             }
-            Text(
-                text = "Event details",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = scheme.onSurface
-            )
+
+            if (event.eventLink.isNotBlank()) {
+                Text(
+                    text = "View post",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.primary,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { uriHandler.openUri(event.eventLink) }
+                )
+            }
         }
 
-        EventImagePlaceholder(height = 180.dp)
+        if (event.cardImageRes != null) {
+            EventImage(
+                imageRes = event.cardImageRes,
+                contentDescription = event.title,
+                height = 180.dp,
+                modifier = Modifier.clickable { zoomedImageRes = event.cardImageRes }
+            )
+        } else {
+            EventImagePlaceholder(height = 180.dp)
+        }
 
         Text(
             text = event.title,
@@ -205,16 +285,15 @@ private fun EventDetailScreen(
             color = scheme.onSurfaceVariant
         )
 
-        if (event.attendees > 0) {
-            EventPhotoRow()
+        if (event.galleryImageRes.isNotEmpty()) {
+            EventPhotoRow(images = event.galleryImageRes, onImageClick = { zoomedImageRes = it })
         }
 
-        Text(
-            text = "Display only — no registration action on this page.",
-            style = MaterialTheme.typography.labelSmall,
-            color = scheme.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier.padding(top = 6.dp)
-        )
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    zoomedImageRes?.let { imageRes ->
+        ZoomableImageDialog(imageRes = imageRes, onDismiss = { zoomedImageRes = null })
     }
 }
 
@@ -225,26 +304,28 @@ private fun monthLabel(date: LocalDate): String = date.month.name.take(3)
 private val previewEvents = listOf(
     ClubEvent(
         id = "u1",
-        title = "Hack The Campus 3.0",
-        date = LocalDate(2026, 9, 14),
-        timeAndPlace = "10:00 AM · Main Auditorium",
-        description = "A 24-hour campus-wide hackathon open to all branches. Teams of up to 4, problem statements released on the day."
+        title = "NASA Space Apps Challenge 2025 | Ghaziabad Edition",
+        date = LocalDate(2025, 9, 27),
+        description = "A globally recognized innovation hackathon hosted at KIET Group of Institutions, focused on solving real-world challenges using NASA's open data.",
+        attendees = 150,
+        eventLink = "https://www.spaceappschallenge.org/2025/local-events/ghaziabad/",
+        cardImageRes = R.drawable.event_nasa_a,
+        galleryImageRes = listOf(R.drawable.event_nasa_a, R.drawable.event_nasa_b, R.drawable.event_nasa_c)
     ),
     ClubEvent(
         id = "u2",
-        title = "Web Dev Weekly Standup",
-        date = LocalDate(2026, 9, 1),
-        timeAndPlace = "6:00 PM · Innogeeks Lab",
-        description = "Weekly sync for the Web Dev domain — progress updates, blockers, and pairing for the week ahead.",
-        isRecurring = true,
-        cadence = "Every Tuesday, 6 PM"
+        title = "Innohacks 3.0",
+        date = LocalDate(2024, 3, 11),
+        description = "A thrilling national-level hackathon organized by Innogeeks, bringing together the brightest minds to code, create, and conquer."
     ),
     ClubEvent(
         id = "p1",
-        title = "Innogeeks Annual Meet 2026",
-        date = LocalDate(2026, 3, 22),
-        attendees = 180,
-        description = "The club's biggest gathering of the year — recap of the year's wins, domain showcases, and the annual awards."
+        title = "CoderSpree 1.0",
+        date = LocalDate(2021, 10, 1),
+        attendees = 100,
+        description = "A competitive coding arena fostering peer-to-peer learning, irrespective of programming language.",
+        eventLink = "https://www.instagram.com/p/CWfhC-0tZai/",
+        cardImageRes = R.drawable.event_coderspree1
     ),
     ClubEvent(
         id = "p2",
@@ -271,14 +352,10 @@ private fun EventsScreenListPreview() {
 @Composable
 private fun EventsScreenUpcomingDetailPreview() {
     InnogeeksTheme {
-        EventsScreen(
-            state = EventsState(
-                isLoading = false,
-                events = previewEvents,
-                selectedEventId = "u1"
-            ),
+        EventDetailScreen(
+            event = previewEvents.first { it.id == "u1" },
             hazeState = HazeState(),
-            onAction = {}
+            onBackClick = {}
         )
     }
 }
@@ -287,14 +364,10 @@ private fun EventsScreenUpcomingDetailPreview() {
 @Composable
 private fun EventsScreenPastDetailPreview() {
     InnogeeksTheme {
-        EventsScreen(
-            state = EventsState(
-                isLoading = false,
-                events = previewEvents,
-                selectedEventId = "p1"
-            ),
+        EventDetailScreen(
+            event = previewEvents.first { it.id == "p1" },
             hazeState = HazeState(),
-            onAction = {}
+            onBackClick = {}
         )
     }
 }

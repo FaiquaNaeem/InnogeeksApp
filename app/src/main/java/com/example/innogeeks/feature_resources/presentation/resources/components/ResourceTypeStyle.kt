@@ -1,6 +1,7 @@
 package com.example.innogeeks.feature_resources.presentation.resources.components
 
 import androidx.compose.ui.graphics.Color
+import com.example.innogeeks.R
 import com.example.innogeeks.feature_resources.domain.model.ResourceType
 
 // One accent + label per resource type, shared by the browser feed, filter bar and detail screen.
@@ -32,3 +33,13 @@ internal val domainAccentPalette = listOf(
 
 internal fun domainAccent(accentIndex: Int): Color =
     domainAccentPalette[accentIndex.mod(domainAccentPalette.size)]
+
+// Maps each domain to its 3D icon; falls back to the IoT glyph for any unknown id.
+internal fun domainIconRes(domainId: String): Int = when (domainId) {
+    "webd" -> R.drawable.ic_domain_webd
+    "appd" -> R.drawable.ic_domain_appd
+    "ml" -> R.drawable.ic_domain_ml
+    "arvr" -> R.drawable.ic_domain_arvr
+    "blockchain" -> R.drawable.ic_domain_blockchain
+    else -> R.drawable.ic_domain_iot
+}

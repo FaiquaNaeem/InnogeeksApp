@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,6 +32,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.innogeeks.R
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -200,7 +204,11 @@ private fun DomainSquareCard(
             contentAlignment = Alignment.Center
         ) {
             BlobBackground(seed = domain.id.hashCode(), modifier = Modifier.fillMaxSize())
-            Text(text = domain.emoji, fontSize = 26.sp)
+            Image(
+                painter = painterResource(id = domainIconRes(domain.id)),
+                contentDescription = null,
+                modifier = Modifier.size(75.dp)
+            )
         }
         Column(
             modifier = Modifier
@@ -232,7 +240,17 @@ private fun DomainSquareCard(
     }
 }
 
-// Animated ambient-gradient background behind the domain emoji: one deep wash blob
+// Maps each domain to its 3D icon; falls back to the IoT glyph for any unknown id.
+private fun domainIconRes(domainId: String): Int = when (domainId) {
+    "webd" -> R.drawable.ic_domain_webd
+    "appd" -> R.drawable.ic_domain_appd
+    "ml" -> R.drawable.ic_domain_ml
+    "arvr" -> R.drawable.ic_domain_arvr
+    "blockchain" -> R.drawable.ic_domain_blockchain
+    else -> R.drawable.ic_domain_iot
+}
+
+// Animated ambient-gradient background behind the domain icon: one deep wash blob
 // anchors the composition, a mid-tone blob adds body, and a small bright blob acts
 // as a highlight accent — normal alpha blending (not additive) so overlaps deepen
 // in color instead of blowing out to a white hotspot.
@@ -246,9 +264,9 @@ private data class BlobSpec(
 )
 
 private val blobSpecs = listOf(
-    BlobSpec(Color(0xFF0B4C63), 0.50f, 0.78f, 0.14f, Offset(0f, 0f), 7200),
-    BlobSpec(Color(0xFF1AA6C9), 0.38f, 0.58f, 0.26f, Offset(0.10f, -0.06f), 5600),
-    BlobSpec(Color(0xFF7FE3FF), 0.32f, 0.34f, 0.34f, Offset(-0.12f, 0.10f), 4400)
+    BlobSpec(Color(0xFF0B4C63), 0.50f, 0.78f, 0.14f, Offset(0f, 0f), 13000),
+    BlobSpec(Color(0xFF1AA6C9), 0.38f, 0.58f, 0.26f, Offset(0.10f, -0.06f), 10000),
+    BlobSpec(Color(0xFF7FE3FF), 0.32f, 0.34f, 0.34f, Offset(-0.12f, 0.10f), 8000)
 )
 
 private const val TWO_PI = (2 * PI).toFloat()
@@ -369,7 +387,6 @@ internal val previewDomainList = listOf(
         name = "Web Dev",
         tagline = "React, Node & everything between",
         description = "Web Dev builds and maintains all of Innogeeks' web-facing tools, from the club site to event portals.",
-        emoji = "🌐",
         accentIndex = 0,
         memberCount = 18,
         techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
@@ -384,7 +401,6 @@ internal val previewDomainList = listOf(
         name = "App Dev",
         tagline = "Native & cross-platform builders",
         description = "App Dev designs and ships the club's native and cross-platform mobile apps, end to end.",
-        emoji = "📱",
         accentIndex = 1,
         memberCount = 14,
         techStack = listOf("Kotlin", "Flutter", "Firebase", "Jetpack Compose"),
@@ -399,7 +415,6 @@ internal val previewDomainList = listOf(
         name = "Machine Learning",
         tagline = "Models, data & leaderboard chasing",
         description = "Machine Learning explores applied ML and data science, from model training to real-world deployment.",
-        emoji = "🧠",
         accentIndex = 2,
         memberCount = 11,
         techStack = listOf("Python", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas"),

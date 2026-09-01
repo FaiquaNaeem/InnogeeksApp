@@ -3,6 +3,7 @@ package com.example.innogeeks.feature_resources.presentation.resources
 import android.content.res.Configuration
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,10 +21,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,17 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -58,6 +51,7 @@ import com.example.innogeeks.feature_domains.domain.model.Domain
 import com.example.innogeeks.feature_resources.domain.model.ResourceItem
 import com.example.innogeeks.feature_resources.domain.model.ResourceType
 import com.example.innogeeks.feature_resources.presentation.resources.components.domainAccent
+import com.example.innogeeks.feature_resources.presentation.resources.components.domainIconRes
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import com.example.innogeeks.ui.theme.displayFontFamily
 import dev.chrisbanes.haze.HazeState
@@ -136,7 +130,6 @@ fun ResourcesScreen(
     onDomainClick: (String) -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
-    var query by rememberSaveable { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.isLoading) {
@@ -178,44 +171,6 @@ fun ResourcesScreen(
             }
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .liquidGlass(hazeState = hazeState, cornerRadius = 14.dp)
-                    .padding(horizontal = 14.dp, vertical = 11.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(9.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = null,
-                    tint = scheme.outline
-                )
-                Box(modifier = Modifier.weight(1f)) {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = "Search resources…",
-                            fontSize = 12.5.sp,
-                            color = scheme.outline
-                        )
-                    }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = scheme.onSurface
-                        ),
-                        cursorBrush = SolidColor(scheme.secondary),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.padding(top = 7.dp))
-
-            Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -230,15 +185,12 @@ fun ResourcesScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Every domain always stays in the grid (so rows never reflow while typing) —
-                // a non-matching card just dims instead of being removed, same as the mock.
                 state.domains.chunked(2).forEach { rowDomains ->
                     Row(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         rowDomains.forEach { domain ->
-                            val matchesQuery = query.isBlank() || domain.name.contains(query, ignoreCase = true)
                             ResourceDomainCard(
                                 domain = domain,
                                 resourceCount = state.resources.count { it.domainId == domain.id },
@@ -247,7 +199,6 @@ fun ResourcesScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .fillMaxHeight()
-                                    .alpha(if (matchesQuery) 1f else 0.35f)
                             )
                         }
                         if (rowDomains.size < 2) {
@@ -287,7 +238,11 @@ private fun ResourceDomainCard(
         )
 
         Column(modifier = Modifier.fillMaxSize().padding(start = 8.dp)) {
-            Text(text = domain.emoji, fontSize = 24.sp)
+            Image(
+                painter = painterResource(id = domainIconRes(domain.id)),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 text = domain.name,
@@ -346,8 +301,8 @@ private val previewResources = listOf(
 )
 
 private val previewDomains = listOf(
-    Domain("webd", "Web Dev", "React, Node & everything between", "Web Dev builds and maintains all of Innogeeks' web-facing tools.", "🌐", 0, 18, emptyList(), emptyList()),
-    Domain("appd", "App Dev", "Native & cross-platform builders", "App Dev designs and ships the club's native and cross-platform mobile apps.", "📱", 1, 14, emptyList(), emptyList())
+    Domain("webd", "Web Dev", "React, Node & everything between", "Web Dev builds and maintains all of Innogeeks' web-facing tools.", 0, 18, emptyList(), emptyList()),
+    Domain("appd", "App Dev", "Native & cross-platform builders", "App Dev designs and ships the club's native and cross-platform mobile apps.", 1, 14, emptyList(), emptyList())
 )
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)

@@ -18,7 +18,6 @@ data class Domain(
     val name: String,
     val tagline: String,
     val description: String,
-    val emoji: String,
     val accentIndex: Int,
     val memberCount: Int,
     val techStack: List<String>,

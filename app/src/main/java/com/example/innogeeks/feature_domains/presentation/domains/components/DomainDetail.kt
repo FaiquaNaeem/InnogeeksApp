@@ -201,7 +201,6 @@ private fun DomainDetailPreview() {
                 name = "Web Dev",
                 tagline = "React, Node & everything between",
                 description = "Web Dev builds and maintains all of Innogeeks' web-facing tools, from the club site to event portals.",
-                emoji = "🌐",
                 accentIndex = 0,
                 memberCount = 18,
                 techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),

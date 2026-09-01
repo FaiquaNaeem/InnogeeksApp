@@ -6,6 +6,7 @@ import com.example.innogeeks.feature_onboarding.domain.auth.AuthError
 import com.example.innogeeks.feature_onboarding.domain.auth.AuthRemoteDataSource
 import com.example.innogeeks.feature_onboarding.domain.auth.NextStep
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 // Stands in for the backend until a host exists. Mirrors the contract's shapes and error
 // codes exactly so swapping in KtorAuthDataSource changes nothing above the data layer.
@@ -28,7 +29,7 @@ class FakeAuthDataSource : AuthRemoteDataSource {
     private var issuedSetupToken: String? = null
 
     override suspend fun checkEmail(collegeEmail: String): Result<NextStep, AuthError> {
-        delay(NETWORK_DELAY)
+        delay(NETWORK_DELAY.milliseconds)
         val account = accounts[collegeEmail.lowercase()]
         // An unknown email is indistinguishable from an ineligible one — §4 wants one message.
         if (account == null || !account.eligible) return denied()
@@ -38,7 +39,7 @@ class FakeAuthDataSource : AuthRemoteDataSource {
     }
 
     override suspend fun requestVerificationCode(collegeEmail: String): Result<Unit, AuthError> {
-        delay(NETWORK_DELAY)
+        delay(NETWORK_DELAY.milliseconds)
         val account = accounts[collegeEmail.lowercase()] ?: return denied()
         if (!account.eligible) return denied()
         if (account.password != null) return apiError(AuthApiError.PASSWORD_ALREADY_SET)
@@ -51,7 +52,7 @@ class FakeAuthDataSource : AuthRemoteDataSource {
         collegeEmail: String,
         code: String
     ): Result<String, AuthError> {
-        delay(NETWORK_DELAY)
+        delay(NETWORK_DELAY.milliseconds)
         val account = accounts[collegeEmail.lowercase()] ?: return denied()
         if (!account.eligible) return denied()
         if (account.password != null) return apiError(AuthApiError.PASSWORD_ALREADY_SET)

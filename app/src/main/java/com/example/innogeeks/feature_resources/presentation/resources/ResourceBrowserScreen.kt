@@ -1,6 +1,7 @@
 package com.example.innogeeks.feature_resources.presentation.resources
 
 import android.content.res.Configuration
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,11 +29,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,8 +46,11 @@ import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_domains.domain.model.Domain
 import com.example.innogeeks.feature_resources.domain.model.ResourceItem
 import com.example.innogeeks.feature_resources.domain.model.ResourceType
+import com.example.innogeeks.feature_resources.presentation.resources.components.ResourceSearchBar
 import com.example.innogeeks.feature_resources.presentation.resources.components.accentColor
+import com.example.innogeeks.feature_resources.presentation.resources.components.domainIconRes
 import com.example.innogeeks.feature_resources.presentation.resources.components.label
+import com.example.innogeeks.feature_resources.presentation.resources.components.suggestResources
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -58,13 +64,21 @@ fun ResourceBrowserScreen(
     hazeState: HazeState,
     onBack: () -> Unit,
     onResourceClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    initialQuery: String = ""
 ) {
     val scheme = MaterialTheme.colorScheme
     var activeType by remember(domain.id) { mutableStateOf<ResourceType?>(null) }
+    var query by rememberSaveable(domain.id) { mutableStateOf(initialQuery) }
 
     val typesPresent = ResourceType.entries.filter { type -> resources.any { it.type == type } }
-    val visible = resources.filter { activeType == null || it.type == activeType }
+    val visible = resources.filter { resource ->
+        (activeType == null || resource.type == activeType) &&
+            (query.isBlank() ||
+                resource.title.contains(query, ignoreCase = true) ||
+                resource.description.contains(query, ignoreCase = true) ||
+                resource.author.contains(query, ignoreCase = true))
+    }
 
     Column(
         modifier = modifier
@@ -102,8 +116,19 @@ fun ResourceBrowserScreen(
                         color = scheme.onSurfaceVariant
                     )
                 }
-                Text(text = domain.emoji, fontSize = 26.sp)
+                Image(
+                    painter = painterResource(id = domainIconRes(domain.id)),
+                    contentDescription = null,
+                    modifier = Modifier.size(26.dp)
+                )
             }
+
+            ResourceSearchBar(
+                query = query,
+                onQueryChange = { query = it },
+                hazeState = hazeState,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
             Row(
                 modifier = Modifier
@@ -139,7 +164,31 @@ fun ResourceBrowserScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 18.dp, vertical = 4.dp)
         ) {
-            if (visible.isEmpty()) {
+            if (visible.isEmpty() && query.isNotBlank()) {
+                val suggestions = remember(query, resources) { suggestResources(query, resources) }
+                if (suggestions.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 60.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No matches for \"$query\".",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = scheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    Column(modifier = Modifier.padding(top = 24.dp)) {
+                        Text(
+                            text = "No matches for \"$query\".",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = scheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 14.dp)
+                        )
+                        SectionLabel("Did you mean")
+                        suggestions.forEach { resource ->
+                            ResourceRowCard(resource = resource, hazeState = hazeState, onClick = { onResourceClick(resource.id) })
+                        }
+                    }
+                }
+            } else if (visible.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 60.dp), contentAlignment = Alignment.Center) {
                     Text(
                         text = "Nothing here yet.",
@@ -297,7 +346,7 @@ private fun ResourceChip(text: String, accent: Color, modifier: Modifier = Modif
 
 private val previewDomain = Domain(
     id = "webd", name = "Web Dev", tagline = "React, Node & everything between",
-    description = "Web Dev builds and maintains all of Innogeeks' web-facing tools.", emoji = "🌐",
+    description = "Web Dev builds and maintains all of Innogeeks' web-facing tools.",
     accentIndex = 0, memberCount = 18, techStack = emptyList(), members = emptyList()
 )
 
@@ -317,6 +366,51 @@ private fun ResourceBrowserScreenPreview() {
             hazeState = HazeState(),
             onBack = {},
             onResourceClick = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ResourceBrowserScreenSearchResultsPreview() {
+    InnogeeksTheme {
+        ResourceBrowserScreen(
+            domain = previewDomain,
+            resources = previewResources,
+            hazeState = HazeState(),
+            onBack = {},
+            onResourceClick = {},
+            initialQuery = "css"
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ResourceBrowserScreenSearchSuggestionsPreview() {
+    InnogeeksTheme {
+        ResourceBrowserScreen(
+            domain = previewDomain,
+            resources = previewResources,
+            hazeState = HazeState(),
+            onBack = {},
+            onResourceClick = {},
+            initialQuery = "The Odn Projct"
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ResourceBrowserScreenSearchNoMatchPreview() {
+    InnogeeksTheme {
+        ResourceBrowserScreen(
+            domain = previewDomain,
+            resources = previewResources,
+            hazeState = HazeState(),
+            onBack = {},
+            onResourceClick = {},
+            initialQuery = "xzq quantum blockchain"
         )
     }
 }

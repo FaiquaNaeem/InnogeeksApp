@@ -16,10 +16,11 @@ fun DataError.toUiText() : UiText {
         DataError.Network.SERVICE_UNAVAILABLE -> UiText.StringResource(R.string.error_service_unavailable)
         DataError.Network.SERIALIZATION -> UiText.StringResource(R.string.error_serialization)
         DataError.Network.UNAUTHORIZED -> UiText.StringResource(R.string.error_unauthorized)
+        DataError.Network.FORBIDDEN -> UiText.StringResource(R.string.error_app_access_denied)
         DataError.Local.DISK_FULL -> UiText.StringResource(R.string.error_disk_full)
         // Only the cases worth distinguishing to a user get their own message; the
-        // rest (BAD_REQUEST, FORBIDDEN, CONFLICT, Local.NOT_FOUND, UNKNOWN...) funnel
-        // into a friendly generic. Tradeoff: `else` means adding a new DataError won't
+        // rest (BAD_REQUEST, CONFLICT, Local.NOT_FOUND, UNKNOWN...) funnel into a
+        // friendly generic. Tradeoff: `else` means adding a new DataError won't
         // trigger a compiler warning here — it silently becomes "unknown".
         else -> UiText.StringResource(R.string.error_unknown)
     }

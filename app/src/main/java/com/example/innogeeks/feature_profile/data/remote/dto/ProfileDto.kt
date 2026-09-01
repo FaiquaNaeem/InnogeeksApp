@@ -11,3 +11,10 @@ data class ProfileDto(
     val year: Int? = null,
     val role: String
 )
+
+// PATCH /me body — batch/year/role are admin-panel-only, so only these two are self-editable.
+@Serializable
+data class UpdateProfileRequestDto(
+    val fullName: String? = null,
+    val phone: String? = null
+)

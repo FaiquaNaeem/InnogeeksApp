@@ -9,8 +9,7 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val profileDataModule = module {
-    // Using fake data source for testing without backend
+    // Backend isn't deployed yet — swap to KtorProfileRemoteDataSource once it's reachable.
     singleOf(::FakeProfileRemoteDataSource).bind<ProfileRemoteDataSource>()
-    // When backend is ready, swap to: singleOf(::KtorProfileRemoteDataSource).bind<ProfileRemoteDataSource>()
     singleOf(::DefaultProfileRepository).bind<ProfileRepository>()
 }

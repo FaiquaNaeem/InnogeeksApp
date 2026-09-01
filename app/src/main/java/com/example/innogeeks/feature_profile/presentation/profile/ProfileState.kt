@@ -10,7 +10,12 @@ data class ProfileState(
     val isLogOutDialogVisible: Boolean = false,
     val isLoadingProfile: Boolean = false,
     val profile: StudentProfile? = null,
-    val profileError: UiText? = null
+    val profileError: UiText? = null,
+    val isEditing: Boolean = false,
+    val editableFullName: String = "",
+    val editablePhone: String = "",
+    val isSaving: Boolean = false,
+    val saveError: UiText? = null
 )
 
 enum class ProfileSection { ACADEMIC, CLUB }

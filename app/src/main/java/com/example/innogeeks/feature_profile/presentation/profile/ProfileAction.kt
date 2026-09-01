@@ -7,4 +7,9 @@ sealed interface ProfileAction {
     data object OnLogOutConfirmed : ProfileAction
     data object OnLogOutDismissed : ProfileAction
     data object OnRetryClick : ProfileAction
+    data object OnEditClick : ProfileAction
+    data class OnFullNameChange(val value: String) : ProfileAction
+    data class OnPhoneChange(val value: String) : ProfileAction
+    data object OnSaveClick : ProfileAction
+    data object OnCancelEditClick : ProfileAction
 }

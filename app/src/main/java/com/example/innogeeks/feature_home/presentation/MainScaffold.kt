@@ -108,6 +108,19 @@ fun MainScaffold(
     var showBottomBar by remember { mutableStateOf(true) }
     LaunchedEffect(selectedTab) { showBottomBar = true }
 
+    // Guest and Registered have different tab counts/order, and this composable survives a
+    // login/logout (session just recomposes, nothing navigates) — without this, selectedTab
+    // keeps its old index into the NEW tab list, landing on the wrong tab or, if the new list
+    // is shorter, on an index the `when` below doesn't handle at all (blank screen).
+    val isRegistered = session is Session.Registered
+    var previousIsRegistered by rememberSaveable { mutableStateOf(isRegistered) }
+    LaunchedEffect(isRegistered) {
+        if (previousIsRegistered != isRegistered) {
+            selectedTab = 0
+        }
+        previousIsRegistered = isRegistered
+    }
+
     // Determine tab layout based on session
     val tabs = when (session) {
         Session.Guest -> guestTabs

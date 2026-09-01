@@ -2,6 +2,7 @@ package com.example.innogeeks.feature_profile.presentation.profile.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,13 +25,15 @@ import androidx.compose.ui.unit.sp
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 
 // Avatar + name + subtitle + role chip. Shared by the guest and registered variants.
+// filled = false gives guest an outlined ring instead of a solid color fill.
 @Composable
 fun ProfileHero(
     initials: String,
     name: String,
     subtitle: String,
     roleChip: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    filled: Boolean = true
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -41,14 +44,24 @@ fun ProfileHero(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
+                .then(
+                    if (filled) {
+                        Modifier.background(MaterialTheme.colorScheme.primary)
+                    } else {
+                        Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = initials,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = if (filled) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
         }
         Text(
@@ -86,7 +99,8 @@ private fun ProfileHeroGuestPreview() {
                 initials = "?",
                 name = "Guest",
                 subtitle = "You're browsing Innogeeks without an account.",
-                roleChip = "Not signed in"
+                roleChip = "Not signed in",
+                filled = false
             )
         }
     }

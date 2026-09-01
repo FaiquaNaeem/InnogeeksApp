@@ -13,5 +13,9 @@ data class ClubEvent(
     val attendees: Int = 0,
     val isRecurring: Boolean = false,
     // e.g. "Every Tuesday, 6 PM" — only meaningful when isRecurring is true.
-    val cadence: String = ""
+    val cadence: String = "",
+    // Instagram/LinkedIn/Devfolio post for the event, when one exists.
+    val eventLink: String = "",
+    val cardImageRes: Int? = null,
+    val galleryImageRes: List<Int> = emptyList()
 )

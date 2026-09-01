@@ -6,15 +6,24 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,13 +37,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.example.innogeeks.R
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 import dev.chrisbanes.haze.HazeState
@@ -77,6 +92,76 @@ fun EventImagePlaceholder(
             style = MaterialTheme.typography.labelSmall,
             color = scheme.onSurfaceVariant.copy(alpha = 0.7f)
         )
+    }
+}
+
+// Real event photo, same footprint as EventImagePlaceholder, for when one exists.
+@Composable
+fun EventImage(
+    imageRes: Int,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    height: Dp = 120.dp
+) {
+    Image(
+        painter = painterResource(id = imageRes),
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Crop,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(RoundedCornerShape(14.dp))
+    )
+}
+
+// Fullscreen pinch-to-zoom/pan viewer for a tapped event photo. Tapping the
+// scrim (not the photo itself) or the close button dismisses it.
+@Composable
+fun ZoomableImageDialog(imageRes: Int, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        var scale by remember { mutableStateOf(1f) }
+        var offset by remember { mutableStateOf(Offset.Zero) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.92f))
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { onDismiss() })
+                }
+        ) {
+            Image(
+                painter = painterResource(id = imageRes),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = offset.x
+                        translationY = offset.y
+                    }
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            val newScale = (scale * zoom).coerceIn(1f, 5f)
+                            scale = newScale
+                            offset = if (newScale <= 1f) Offset.Zero else offset + pan
+                        }
+                    }
+            )
+
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(12.dp)
+            ) {
+                Icon(imageVector = Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            }
+        }
     }
 }
 
@@ -148,6 +233,7 @@ fun EventCard(
     month: String,
     attendees: Int,
     cadence: String,
+    cardImageRes: Int?,
     onClick: () -> Unit,
     hazeState: HazeState,
     modifier: Modifier = Modifier
@@ -160,7 +246,11 @@ fun EventCard(
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        EventImagePlaceholder()
+        if (cardImageRes != null) {
+            EventImage(imageRes = cardImageRes, contentDescription = title)
+        } else {
+            EventImagePlaceholder()
+        }
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -201,18 +291,20 @@ fun EventCard(
     }
 }
 
-// Four emoji cells that pop in one after another on a past event's detail page.
+// Real event photos that pop in one after another on a past event's detail page.
 @Composable
 fun EventPhotoRow(
-    modifier: Modifier = Modifier
+    images: List<Int>,
+    modifier: Modifier = Modifier,
+    onImageClick: (Int) -> Unit = {}
 ) {
-    val emojis = listOf("📸", "🎤", "🏆", "🎉")
+    if (images.isEmpty()) return
 
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        emojis.forEachIndexed { index, emoji ->
+        images.forEachIndexed { index, imageRes ->
             var visible by remember { mutableStateOf(false) }
             LaunchedEffect(Unit) {
                 delay(120L + index * 90L)
@@ -229,26 +321,26 @@ fun EventPhotoRow(
                 label = "photoAlpha"
             )
 
-            Box(
+            Image(
+                painter = painterResource(id = imageRes),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .weight(1f)
+                    .height(64.dp)
                     .graphicsLayer {
                         scaleX = scale
                         scaleY = scale
                         this.alpha = alpha
                     }
                     .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .border(
                         1.dp,
                         MaterialTheme.colorScheme.outlineVariant,
                         RoundedCornerShape(10.dp)
                     )
-                    .padding(vertical = 14.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = emoji, fontSize = 20.sp)
-            }
+                    .clickable { onImageClick(imageRes) }
+            )
         }
     }
 }
@@ -268,10 +360,11 @@ private fun EventComponentsPreview() {
                 month = "AUG",
                 attendees = 210,
                 cadence = "",
+                cardImageRes = R.drawable.event_coderspree1,
                 onClick = {},
                 hazeState = remember { HazeState() }
             )
-            EventPhotoRow()
+            EventPhotoRow(images = listOf(R.drawable.event_nasa_a, R.drawable.event_nasa_b, R.drawable.event_nasa_c))
         }
     }
 }

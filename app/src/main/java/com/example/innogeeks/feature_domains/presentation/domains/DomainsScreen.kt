@@ -1,12 +1,6 @@
 package com.example.innogeeks.feature_domains.presentation.domains
 
 import android.content.res.Configuration
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.StartOffset
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,8 +20,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -35,6 +33,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,7 +47,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.toRoute
 import com.example.innogeeks.feature_domains.domain.model.Domain
 import com.example.innogeeks.feature_domains.domain.model.DomainMember
@@ -64,14 +66,21 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 // Nested NavHost scoped to just this tab's content area — MainScaffold's bottom nav
-// lives outside this Box, so it stays on screen while the list/detail pair slide underneath it.
+// lives outside this Box, so the list/detail pair slide underneath it. Bottom-bar
+// visibility itself is reported up via onBottomBarVisibilityChanged (see MainScaffold).
 @Composable
 fun DomainsRoot(
     hazeState: HazeState,
+    onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
     viewModel: DomainsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val navController = rememberNavController()
+
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(currentBackStackEntry) {
+        onBottomBarVisibilityChanged(currentBackStackEntry?.destination?.hasRoute<DomainDetailRoute>() != true)
+    }
 
     NavHost(
         navController = navController,
@@ -260,40 +269,113 @@ private val blobSpecs = listOf(
     BlobSpec(Color(0xFF7FE3FF), 0.32f, 0.34f, 0.34f, Offset(-0.12f, 0.10f), 8000)
 )
 
+private const val TWO_PI = (2 * PI).toFloat()
+
+// A blob's live position, driven by BlobBackground's per-frame bounce loop below —
+// var pos is a mutableStateOf so writing it invalidates only the Canvas draw, not recomposition.
+private class BouncingBlob(pos: Offset, var vel: Offset, val rng: Random) {
+    var pos by mutableStateOf(pos)
+}
+
+// Each blob wanders in a straight line inside its rectangular bounds (orbitCenterOffset ±
+// orbitReachScale, same footprint the old orbit used) and reflects its velocity off the walls
+// on contact, with a small random turn added at each bounce so the path never repeats in an
+// obvious cycle — endless motion, no restart point, so no discontinuity is possible.
 @Composable
 private fun BlobBackground(seed: Int, modifier: Modifier = Modifier) {
-    val infinite = rememberInfiniteTransition(label = "blob")
-    val phases = remember(seed) { List(blobSpecs.size) { Random(seed + it).nextInt(0, 4000) } }
-    val angles = blobSpecs.indices.map { i ->
-        infinite.animateFloat(
-            initialValue = 0f,
-            targetValue = (2 * PI).toFloat(),
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = blobSpecs[i].periodMs, easing = LinearEasing),
-                initialStartOffset = StartOffset(phases[i])
-            ),
-            label = "angle$i"
-        )
+    var containerSize by remember(seed) { mutableStateOf(IntSize.Zero) }
+    val blobs = remember(seed) {
+        blobSpecs.indices.map { i -> BouncingBlob(pos = Offset.Zero, vel = Offset.Zero, rng = Random(seed + i * 97)) }
     }
-    Canvas(modifier = modifier.blur(20.dp)) {
-        val base = Offset(size.width / 2f, size.height / 2f)
+
+    LaunchedEffect(seed, containerSize) {
+        val size = containerSize
+        if (size.width == 0 || size.height == 0) return@LaunchedEffect
+        val minDim = minOf(size.width, size.height).toFloat()
+
+        fun centerPxFor(spec: BlobSpec) = Offset(
+            size.width / 2f + spec.orbitCenterOffset.x * size.width,
+            size.height / 2f + spec.orbitCenterOffset.y * size.height
+        )
+
         blobSpecs.forEachIndexed { i, spec ->
-            val t = angles[i].value + i * 2.1f
-            val orbitCenter = base + Offset(spec.orbitCenterOffset.x * size.width, spec.orbitCenterOffset.y * size.height)
-            val reach = size.minDimension * spec.orbitReachScale
+            val blob = blobs[i]
+            val reachPx = minDim * spec.orbitReachScale
+            val centerPx = centerPxFor(spec)
+            val startAngle = blob.rng.nextFloat() * TWO_PI
+            val startDist = blob.rng.nextFloat() * reachPx
+            val speed = (2f * reachPx) / (spec.periodMs / 1000f)
+            val velAngle = blob.rng.nextFloat() * TWO_PI
+            blob.pos = centerPx + Offset(cos(startAngle), sin(startAngle)) * startDist
+            blob.vel = Offset(cos(velAngle), sin(velAngle)) * speed
+        }
+
+        var lastFrameNanos = withFrameNanos { it }
+        while (true) {
+            val nowNanos = withFrameNanos { it }
+            val dt = ((nowNanos - lastFrameNanos) / 1_000_000_000f).coerceIn(0f, 0.1f)
+            lastFrameNanos = nowNanos
+
+            blobSpecs.forEachIndexed { i, spec ->
+                val blob = blobs[i]
+                val reachPx = minDim * spec.orbitReachScale
+                val centerPx = centerPxFor(spec)
+                val minX = centerPx.x - reachPx
+                val maxX = centerPx.x + reachPx
+                val minY = centerPx.y - reachPx
+                val maxY = centerPx.y + reachPx
+
+                var x = blob.pos.x + blob.vel.x * dt
+                var y = blob.pos.y + blob.vel.y * dt
+                var vx = blob.vel.x
+                var vy = blob.vel.y
+                var bounced = false
+
+                if (x < minX || x > maxX) {
+                    x = x.coerceIn(minX, maxX)
+                    vx = -vx
+                    bounced = true
+                }
+                if (y < minY || y > maxY) {
+                    y = y.coerceIn(minY, maxY)
+                    vy = -vy
+                    bounced = true
+                }
+
+                if (bounced) {
+                    val jitter = (blob.rng.nextFloat() - 0.5f) * (PI.toFloat() / 8f)
+                    val cosJ = cos(jitter)
+                    val sinJ = sin(jitter)
+                    val rotatedVx = vx * cosJ - vy * sinJ
+                    val rotatedVy = vx * sinJ + vy * cosJ
+                    vx = rotatedVx
+                    vy = rotatedVy
+                }
+
+                blob.vel = Offset(vx, vy)
+                blob.pos = Offset(x, y)
+            }
+        }
+    }
+
+    Canvas(
+        modifier = modifier
+            .blur(20.dp)
+            .onSizeChanged { containerSize = it }
+    ) {
+        blobSpecs.forEachIndexed { i, spec ->
             val radius = size.minDimension * spec.radiusScale
-            val cx = orbitCenter.x + cos(t) * reach
-            val cy = orbitCenter.y + sin(t * 1.3f) * reach
+            val center = blobs[i].pos
             drawCircle(
                 brush = Brush.radialGradient(
                     0f to spec.color.copy(alpha = spec.peakAlpha),
                     0.45f to spec.color.copy(alpha = spec.peakAlpha * 0.55f),
                     1f to spec.color.copy(alpha = 0f),
-                    center = Offset(cx, cy),
+                    center = center,
                     radius = radius
                 ),
                 radius = radius,
-                center = Offset(cx, cy)
+                center = center
             )
         }
     }

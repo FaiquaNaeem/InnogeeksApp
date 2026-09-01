@@ -3,11 +3,14 @@ package com.example.innogeeks.feature_profile.presentation.profile
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,14 +19,16 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.innogeeks.core.domain.session.Session
+import com.example.innogeeks.core.presentation.UiText
 import com.example.innogeeks.core.presentation.components.ExpandableRow
+import com.example.innogeeks.core.presentation.components.GlassIntensity
 import com.example.innogeeks.core.presentation.components.SectionLabel
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_profile.presentation.profile.components.ProfileHero
@@ -101,6 +108,7 @@ fun ProfileScreen(
 
         if (state.isLogOutDialogVisible) {
             LogOutDialog(
+                hazeState = hazeState,
                 onConfirm = { onAction(ProfileAction.OnLogOutConfirmed) },
                 onDismiss = { onAction(ProfileAction.OnLogOutDismissed) }
             )
@@ -108,7 +116,7 @@ fun ProfileScreen(
     }
 }
 
-// Guest gets an honest login CTA and club info — no invented student, no stat tiles.
+// Identity -> action -> info, all on reduced glass so guest reads quieter than registered.
 private fun LazyListScope.guestProfile(hazeState: HazeState, onAction: (ProfileAction) -> Unit) {
     item {
         ProfileHero(
@@ -116,16 +124,8 @@ private fun LazyListScope.guestProfile(hazeState: HazeState, onAction: (ProfileA
             name = "Guest",
             subtitle = "You're browsing Innogeeks without an account.",
             roleChip = "Not signed in",
+            filled = false,
             modifier = Modifier.padding(vertical = 6.dp)
-        )
-    }
-
-    item {
-        InfoPanel(
-            title = "Already registered?",
-            body = "Accounts are created for students who completed the offline registration. " +
-                "Check your inbox — we email your college ID and a password.",
-            hazeState = hazeState
         )
     }
 
@@ -134,8 +134,17 @@ private fun LazyListScope.guestProfile(hazeState: HazeState, onAction: (ProfileA
             text = "Log In",
             isPrimary = true,
             onClick = { onAction(ProfileAction.OnLoginClick) },
+            hazeState = hazeState
+        )
+    }
+
+    item {
+        InfoPanel(
+            title = "Already registered?",
+            body = "Accounts are created for students who completed the offline registration. " +
+                "Check your inbox — we email your college ID and a password.",
             hazeState = hazeState,
-            modifier = Modifier.padding(top = 2.dp)
+            intensity = GlassIntensity.REDUCED
         )
     }
 
@@ -146,25 +155,19 @@ private fun LazyListScope.guestProfile(hazeState: HazeState, onAction: (ProfileA
             title = "A student tech community at KIET",
             body = "We build, break and ship things together — hackathons, workshops, " +
                 "research projects and open source, run entirely by students.",
-            hazeState = hazeState
+            hazeState = hazeState,
+            intensity = GlassIntensity.REDUCED
         )
     }
 
     item {
         InfoPanel(
-            title = "Domains",
-            body = "Web Dev · App Dev · AI / ML · AR / VR · Cybersecurity · Design. " +
-                "Open the Domains tab to see what each one works on.",
-            hazeState = hazeState
-        )
-    }
-
-    item {
-        InfoPanel(
-            title = "How to join",
-            body = "Recruitment opens once a year. Register during the offline drive, " +
-                "clear the aptitude test and the interview, and you're in.",
-            hazeState = hazeState
+            title = "Domains & how to join",
+            body = "Web Dev · App Dev · AI / ML · AR / VR · Cybersecurity · Design — open the " +
+                "Domains tab to see what each one works on. Recruitment opens once a year: " +
+                "register during the offline drive, clear the aptitude test and the interview.",
+            hazeState = hazeState,
+            intensity = GlassIntensity.REDUCED
         )
     }
 }
@@ -227,6 +230,29 @@ private fun LazyListScope.registeredProfile(
     // Success state with profile data
     if (profile != null) {
         item {
+            if (state.isEditing) {
+                EditProfileCard(
+                    fullName = state.editableFullName,
+                    phone = state.editablePhone,
+                    isSaving = state.isSaving,
+                    saveError = state.saveError,
+                    onFullNameChange = { onAction(ProfileAction.OnFullNameChange(it)) },
+                    onPhoneChange = { onAction(ProfileAction.OnPhoneChange(it)) },
+                    onSaveClick = { onAction(ProfileAction.OnSaveClick) },
+                    onCancelClick = { onAction(ProfileAction.OnCancelEditClick) },
+                    hazeState = hazeState
+                )
+            } else {
+                ProfileButton(
+                    text = "Edit Profile",
+                    isPrimary = false,
+                    onClick = { onAction(ProfileAction.OnEditClick) },
+                    hazeState = hazeState
+                )
+            }
+        }
+
+        item {
             ExpandableRow(
                 title = "Contact & Club",
                 subtitle = listOfNotNull(
@@ -275,6 +301,12 @@ private fun LazyListScope.registeredProfile(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    // Batch/year come from your registration record — only the club admin can change them.
+                    Text(
+                        text = "Managed by Innogeeks admin",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -291,25 +323,62 @@ private fun LazyListScope.registeredProfile(
     }
 }
 
+// Rendered in-place inside ProfileScreen's Box (not a system Dialog window) so it shares
+// the LazyColumn's hazeSource and the card actually blurs the profile content behind it.
 @Composable
 private fun LogOutDialog(
+    hazeState: HazeState,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = "Log out?") },
-        text = {
-            Text(text = "You'll go back to browsing as a guest. You can log in again anytime.")
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(text = "Log Out", color = MaterialTheme.colorScheme.error)
+    BackHandler(onBack = onDismiss)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 32.dp)
+                .fillMaxWidth()
+                .liquidGlass(hazeState = hazeState, cornerRadius = 24.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}
+                )
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Log out?",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "You'll go back to browsing as a guest. You can log in again anytime.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDismiss) { Text(text = "Cancel") }
+                TextButton(onClick = onConfirm) {
+                    Text(text = "Log Out", color = MaterialTheme.colorScheme.error)
+                }
             }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(text = "Cancel") } },
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-    )
+        }
+    }
 }
 
 @Composable
@@ -347,13 +416,14 @@ private fun InfoPanel(
     title: String,
     body: String,
     hazeState: HazeState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    intensity: GlassIntensity = GlassIntensity.FULL
 ) {
     val scheme = MaterialTheme.colorScheme
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .liquidGlass(hazeState = hazeState, cornerRadius = 18.dp)
+            .liquidGlass(hazeState = hazeState, cornerRadius = 18.dp, intensity = intensity)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -395,7 +465,8 @@ private fun ProfileButton(
     isPrimary: Boolean,
     onClick: () -> Unit,
     hazeState: HazeState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    intensity: GlassIntensity = GlassIntensity.FULL
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(
@@ -408,7 +479,7 @@ private fun ProfileButton(
                         .background(scheme.primary)
                         .border(1.dp, scheme.primary, RoundedCornerShape(percent = 50))
                 } else {
-                    Modifier.liquidGlass(hazeState = hazeState, cornerRadius = 999.dp)
+                    Modifier.liquidGlass(hazeState = hazeState, cornerRadius = 999.dp, intensity = intensity)
                 }
             )
             .clickable(onClick = onClick)
@@ -421,6 +492,79 @@ private fun ProfileButton(
             fontWeight = FontWeight.Bold,
             color = if (isPrimary) scheme.onPrimary else scheme.onSurface
         )
+    }
+}
+
+// Inline edit form for the two self-editable fields — batch/year/email are read-only elsewhere.
+@Composable
+private fun EditProfileCard(
+    fullName: String,
+    phone: String,
+    isSaving: Boolean,
+    saveError: UiText?,
+    onFullNameChange: (String) -> Unit,
+    onPhoneChange: (String) -> Unit,
+    onSaveClick: () -> Unit,
+    onCancelClick: () -> Unit,
+    hazeState: HazeState,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .liquidGlass(hazeState = hazeState, cornerRadius = 18.dp)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text(
+            text = "Edit Profile",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        OutlinedTextField(
+            value = fullName,
+            onValueChange = onFullNameChange,
+            label = { Text("Full name") },
+            singleLine = true,
+            enabled = !isSaving,
+            colors = OutlinedTextFieldDefaults.colors(),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = phone,
+            onValueChange = onPhoneChange,
+            label = { Text("Phone") },
+            singleLine = true,
+            enabled = !isSaving,
+            colors = OutlinedTextFieldDefaults.colors(),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        saveError?.let { error ->
+            Text(
+                text = error.asString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ProfileButton(
+                text = if (isSaving) "Saving…" else "Save",
+                isPrimary = true,
+                onClick = onSaveClick,
+                hazeState = hazeState
+            )
+            ProfileButton(
+                text = "Cancel",
+                isPrimary = false,
+                onClick = onCancelClick,
+                hazeState = hazeState
+            )
+        }
     }
 }
 
@@ -476,6 +620,86 @@ private fun ProfileScreenRegisteredExpandedPreview() {
                     year = 2,
                     role = "COORDINATOR"
                 )
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+private val previewProfile = com.example.innogeeks.feature_profile.domain.model.StudentProfile(
+    collegeEmail = "atul@kiet.edu",
+    fullName = "Atul Kumar",
+    phone = "+91 98765 43210",
+    batch = "2025-29",
+    year = 1,
+    role = "FIRST_YEAR_STUDENT"
+)
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenEditingPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                profile = previewProfile,
+                isEditing = true,
+                editableFullName = "Atul Kumar",
+                editablePhone = "+91 98765 43210"
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenSavingPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                profile = previewProfile,
+                isEditing = true,
+                editableFullName = "Atul Kumar",
+                editablePhone = "+91 98765 43210",
+                isSaving = true
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenSaveErrorPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                profile = previewProfile,
+                isEditing = true,
+                editableFullName = "Atul Kumar",
+                editablePhone = "",
+                saveError = UiText.DynamicString("Phone number can't be empty")
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 820)
+@Composable
+private fun ProfileScreenAccessDeniedPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                profileError = UiText.StringResource(com.example.innogeeks.R.string.error_app_access_denied)
             ),
             hazeState = HazeState(),
             onAction = {}

@@ -67,6 +67,9 @@ fun AuthGlowBackground(hazeState: HazeState, modifier: Modifier = Modifier) {
     }
 }
 
+// FULL is the original recipe everywhere; REDUCED is a quieter variant for guest profile.
+enum class GlassIntensity { FULL, REDUCED }
+
 // THE single liquid-glass recipe. Every auth card (login, signup, splash, intro) applies
 // this so the look is defined in ONE place — change it here, every screen updates.
 // Haze 2.0: blurEffect{} is a plain (non-composable) builder lambda, so all @Composable
@@ -75,12 +78,18 @@ fun AuthGlowBackground(hazeState: HazeState, modifier: Modifier = Modifier) {
 @Composable
 fun Modifier.liquidGlass(
     hazeState: HazeState,
-    cornerRadius: Dp = 28.dp
+    cornerRadius: Dp = 28.dp,
+    intensity: GlassIntensity = GlassIntensity.FULL
 ): Modifier {
     // Resolve all @Composable calls here, before entering any non-composable lambda.
-    val glassStyle = HazeMaterials.ultraThin()
-    val topColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
-    val bottomColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+    val glassStyle = when (intensity) {
+        GlassIntensity.FULL -> HazeMaterials.ultraThin()
+        GlassIntensity.REDUCED -> HazeMaterials.thin()
+    }
+    val borderAlphaScale = if (intensity == GlassIntensity.REDUCED) 0.5f else 1f
+    val topColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f * borderAlphaScale)
+    val bottomColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f * borderAlphaScale)
+    val borderWidth = if (intensity == GlassIntensity.REDUCED) 1.dp else 1.5.dp
 
     return this
         .clip(RoundedCornerShape(cornerRadius))
@@ -90,7 +99,7 @@ fun Modifier.liquidGlass(
             }
         }
         .border(
-            width = 1.5.dp,
+            width = borderWidth,
             brush = Brush.verticalGradient(listOf(topColor, bottomColor)),
             shape = RoundedCornerShape(cornerRadius)
         )

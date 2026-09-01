@@ -6,4 +6,5 @@ import com.example.innogeeks.feature_profile.domain.model.StudentProfile
 
 interface ProfileRepository {
     suspend fun getProfile(): Result<StudentProfile, DataError.Network>
+    suspend fun updateProfile(fullName: String?, phone: String?): Result<StudentProfile, DataError.Network>
 }

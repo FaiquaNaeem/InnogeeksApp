@@ -183,7 +183,8 @@ fun MainScaffold(
                             hazeState = hazeState,
                             session = session,
                             onNavigateToProfile = { selectedTab = 3 },
-                            onNavigateToAuth = onNavigateToAuth
+                            onNavigateToAuth = onNavigateToAuth,
+                            onNavigateToEvents = { selectedTab = 2 }
                         )
                         1 -> DomainsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })
                         2 -> EventsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })

@@ -43,6 +43,7 @@ fun HomeRoot(
     session: Session,
     onNavigateToProfile: () -> Unit,
     onNavigateToAuth: () -> Unit,
+    onNavigateToEvents: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -51,6 +52,7 @@ fun HomeRoot(
         viewModel.events.collectLatest { event ->
             when (event) {
                 HomeEvent.NavigateToProfile -> onNavigateToProfile()
+                HomeEvent.NavigateToEvents -> onNavigateToEvents()
             }
         }
     }
@@ -141,7 +143,12 @@ fun HomeScreen(
                 )
             }
 
-            item { ClassCultureCard(moments = state.cultureMoments) }
+            item {
+                ClassCultureCard(
+                    moments = state.cultureMoments,
+                    onClick = { onAction(HomeAction.OnClassCultureClick) }
+                )
+            }
 
             item {
                 SectionLabel(

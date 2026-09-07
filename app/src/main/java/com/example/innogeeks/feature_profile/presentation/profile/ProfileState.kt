@@ -18,4 +18,4 @@ data class ProfileState(
     val saveError: UiText? = null
 )
 
-enum class ProfileSection { ACADEMIC, CLUB }
+enum class ProfileSection { ACADEMIC, CLUB, ABOUT, JOIN }

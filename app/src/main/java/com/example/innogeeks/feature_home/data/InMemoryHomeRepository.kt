@@ -13,7 +13,7 @@ class InMemoryHomeRepository : HomeRepository {
             ClubStats(
                 totalMembers = 150,
                 totalProjects = 45,
-                totalDomains = 6,
+                totalDomains = 5,
                 totalEvents = 24
             )
         )
@@ -45,12 +45,6 @@ class InMemoryHomeRepository : HomeRepository {
                     name = "AR / VR",
                     wheelLabel = "AR VR",
                     blurb = "Immersive tinkerers building spatial experiences with Unity & WebXR."
-                ),
-                DomainPreview(
-                    id = "blockchain",
-                    name = "Blockchain",
-                    wheelLabel = "CHAIN",
-                    blurb = "Smart contracts, chains, and Web3 tooling explorers."
                 ),
                 DomainPreview(
                     id = "iot",

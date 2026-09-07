@@ -75,25 +75,11 @@ class InMemoryDomainsRepository : DomainsRepository {
                     )
                 ),
                 Domain(
-                    id = "blockchain",
-                    name = "Blockchain",
-                    tagline = "Smart contracts & Web3 tooling",
-                    description = "Blockchain builds smart contracts and Web3 tooling, covering everything from dApps to on-chain infrastructure.",
-                    accentIndex = 4,
-                    memberCount = 7,
-                    techStack = listOf("Solidity", "Ethereum", "Hardhat", "IPFS"),
-                    members = listOf(
-                        DomainMember("Ishaan Kapoor", "IK", COORDINATOR),
-                        DomainMember("Tanvi Agarwal", "TA", TEAM),
-                        DomainMember("Devansh Oberoi", "DO", TEAM)
-                    )
-                ),
-                Domain(
                     id = "iot",
                     name = "IoT",
                     tagline = "Sensors, boards & the physical world",
                     description = "IoT connects sensors, boards, and the physical world, building hardware-backed projects from prototype to deployment.",
-                    accentIndex = 5,
+                    accentIndex = 4,
                     memberCount = 8,
                     techStack = listOf("Arduino", "Raspberry Pi", "ESP32", "MQTT"),
                     members = listOf(

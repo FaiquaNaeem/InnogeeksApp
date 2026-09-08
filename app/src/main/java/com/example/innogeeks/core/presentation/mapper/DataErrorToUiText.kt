@@ -1,6 +1,6 @@
 package com.example.innogeeks.core.presentation.mapper
 
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import com.example.innogeeks.core.domain.error.DataError
 import com.example.innogeeks.core.presentation.UiText
 

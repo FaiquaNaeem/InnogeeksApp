@@ -47,7 +47,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.toRoute
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import com.example.innogeeks.core.presentation.components.liquidGlass
 import com.example.innogeeks.feature_events.domain.model.ClubEvent
 import com.example.innogeeks.feature_events.presentation.events.components.EventCard

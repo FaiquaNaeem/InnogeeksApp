@@ -1,6 +1,6 @@
 package com.example.innogeeks.feature_onboarding.presentation.mapper
 
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import com.example.innogeeks.core.presentation.UiText
 import com.example.innogeeks.core.presentation.mapper.toUiText
 import com.example.innogeeks.feature_onboarding.domain.auth.AuthApiError

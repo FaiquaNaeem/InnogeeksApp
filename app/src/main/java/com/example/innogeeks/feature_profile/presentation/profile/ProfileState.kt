@@ -15,7 +15,9 @@ data class ProfileState(
     val editableFullName: String = "",
     val editablePhone: String = "",
     val isSaving: Boolean = false,
-    val saveError: UiText? = null
+    val saveError: UiText? = null,
+    val isDeleteAccountDialogVisible: Boolean = false,
+    val deleteConfirmationInput: String = ""
 )
 
-enum class ProfileSection { ACADEMIC, CLUB }
+enum class ProfileSection { ACADEMIC, CLUB, ABOUT, JOIN, ACCOUNT }

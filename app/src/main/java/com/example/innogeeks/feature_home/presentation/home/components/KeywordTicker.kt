@@ -47,6 +47,9 @@ private class ChipState(val text: String) {
     var x by mutableStateOf(0f)
     var width by mutableStateOf(0f)
     var ticked by mutableStateOf(false)
+    // Last frame's past-center reading, so tick only flips on an actual crossing — never mid-wrap.
+    var pastCenter by mutableStateOf(false)
+    var wrapCount by mutableStateOf(0)
 }
 
 @Composable
@@ -78,17 +81,30 @@ private fun TickerRow(keywords: List<String>) {
     // Every chip must be measured before any can be positioned, since each sits after the last.
     val allMeasured = chips.isNotEmpty() && chips.all { it.width > 0f }
     var laidOut by remember(chips) { mutableStateOf(false) }
+    // Full loop length (all chips + gaps). Wrapping shifts by this instead of an absolute
+    // reset, so relative spacing between chips never drifts and they can't overlap.
+    var contentWidth by remember(chips) { mutableStateOf(0f) }
 
     LaunchedEffect(chips, stripWidth, allMeasured) {
         if (stripWidth <= 0f || !allMeasured) return@LaunchedEffect
 
         if (!laidOut) {
             val gap = with(density) { 12.dp.toPx() }
-            var cursor = with(density) { 14.dp.toPx() }
+            val start = with(density) { 14.dp.toPx() }
+            var cursor = start
             chips.forEach { chip ->
                 chip.x = cursor
                 cursor += chip.width + gap
+                // Seed real state at layout time — a chip can legitimately start past centre.
+                val isPastCenter = (chip.x + chip.width / 2f) >= stripWidth / 2f
+                chip.pastCenter = isPastCenter
+                chip.ticked = isPastCenter
             }
+            // Floor the wrap period to ensure the chip reappears fully off-screen left.
+            // A chip wraps when x > stripWidth + 10f. After wrap, its right edge must be <= 0.
+            // new_x = x - contentWidth <= -chip.width  =>  contentWidth >= x + chip.width.
+            val maxChipWidth = chips.maxOfOrNull { it.width } ?: 0f
+            contentWidth = maxOf(cursor - start, stripWidth + maxChipWidth + 25f)
             laidOut = true
         }
 
@@ -102,14 +118,21 @@ private fun TickerRow(keywords: List<String>) {
 
                 chips.forEach { chip ->
                     chip.x += speed * dt
-                    // Wrap off the right edge back to just before the left edge.
-                    if (chip.x > stripWidth + 10f) {
-                        chip.x = -chip.width - 10f
-                        chip.ticked = false
+                    // Shift back by the full loop length so every chip keeps its original
+                    // spacing relative to the others — never an absolute jump.
+                    while (chip.x > stripWidth + 10f) {
+                        chip.x -= contentWidth
+                        chip.wrapCount++
                     }
+                    // Tick once on crossing the centre line and stay ticked until the chip
+                    // actually wraps back to before the line — driven by position, not the wrap
+                    // event itself, so a chip that's still past centre right after wrapping
+                    // keeps its state instead of replaying the glow.
                     val centre = chip.x + chip.width / 2f
-                    if (!chip.ticked && centre >= stripWidth / 2f) {
-                        chip.ticked = true
+                    val isPastCenter = centre >= stripWidth / 2f
+                    if (isPastCenter != chip.pastCenter) {
+                        chip.ticked = isPastCenter
+                        chip.pastCenter = isPastCenter
                     }
                 }
             }
@@ -139,15 +162,17 @@ private fun TickerRow(keywords: List<String>) {
         )
 
         chips.forEach { chip ->
-            TagChip(
-                text = chip.text,
-                ticked = chip.ticked,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    // Chips start off-screen left until the row has been laid out.
-                    .offset { IntOffset(if (laidOut) chip.x.toInt() else -9999, 0) }
-                    .onSizeChanged { chip.width = it.width.toFloat() }
-            )
+            androidx.compose.runtime.key(chip, chip.wrapCount) {
+                TagChip(
+                    text = chip.text,
+                    ticked = chip.ticked,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        // Chips start off-screen left until the row has been laid out.
+                        .offset { IntOffset(if (laidOut) chip.x.toInt() else -9999, 0) }
+                        .onSizeChanged { chip.width = it.width.toFloat() }
+                )
+            }
         }
     }
 }

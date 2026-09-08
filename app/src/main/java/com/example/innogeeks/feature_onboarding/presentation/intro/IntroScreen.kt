@@ -115,13 +115,18 @@ fun IntroScreen(
         ) {
             // Skip lives top-right, out of the way — pure liquid glass over plain text,
             // NO blue overlay (that would read as tinted glassmorphism, not liquid glass).
-            TextButton(
-                onClick = { onAction(IntroAction.OnSkipClick) },
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .liquidGlass(hazeState, cornerRadius = 20.dp)
-            ) {
-                Text("Skip", color = Color.White.copy(alpha = 0.85f))
+            // Hidden on the last page — Get Started already exits from there.
+            if (state.isLastPage) {
+                Spacer(Modifier.height(40.dp))
+            } else {
+                TextButton(
+                    onClick = { onAction(IntroAction.OnSkipClick) },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .liquidGlass(hazeState, cornerRadius = 20.dp)
+                ) {
+                    Text("Skip", color = Color.White.copy(alpha = 0.85f))
+                }
             }
 
             // The swipeable slides — one glass card per page. weight(1f) takes the space

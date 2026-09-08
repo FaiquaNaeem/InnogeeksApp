@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -99,7 +101,11 @@ fun ProfileScreen(
             }
 
             when (val session = state.session) {
-                Session.Guest -> guestProfile(hazeState = hazeState, onAction = onAction)
+                Session.Guest -> guestProfile(
+                    expandedSection = state.expandedSection,
+                    hazeState = hazeState,
+                    onAction = onAction
+                )
                 is Session.Authenticated -> registeredProfile(
                     state = state,
                     hazeState = hazeState,
@@ -115,16 +121,32 @@ fun ProfileScreen(
                 onDismiss = { onAction(ProfileAction.OnLogOutDismissed) }
             )
         }
+
+        if (state.isDeleteAccountDialogVisible) {
+            DeleteAccountDialog(
+                hazeState = hazeState,
+                confirmationInput = state.deleteConfirmationInput,
+                onConfirmationInputChange = { onAction(ProfileAction.OnDeleteConfirmationInputChange(it)) },
+                onConfirm = { onAction(ProfileAction.OnDeleteAccountConfirmed) },
+                onDismiss = { onAction(ProfileAction.OnDeleteAccountDismissed) }
+            )
+        }
     }
 }
 
-// Identity -> action -> info, all on reduced glass so guest reads quieter than registered.
-private fun LazyListScope.guestProfile(hazeState: HazeState, onAction: (ProfileAction) -> Unit) {
+// Identity -> action -> info. The two "About Innogeeks" facts collapse into accordions
+// (same ExpandableRow pattern the registered profile below already uses) instead of dumping
+// full paragraphs inline, so the guest state doesn't read as a different, text-heavier screen.
+private fun LazyListScope.guestProfile(
+    expandedSection: ProfileSection?,
+    hazeState: HazeState,
+    onAction: (ProfileAction) -> Unit
+) {
     item {
         ProfileHero(
             initials = "?",
             name = "Guest",
-            subtitle = "You're browsing Innogeeks without an account.",
+            subtitle = "Log in to unlock your dashboard, tracker and domain access.",
             roleChip = "Not signed in",
             filled = false,
             modifier = Modifier.padding(vertical = 6.dp)
@@ -140,36 +162,113 @@ private fun LazyListScope.guestProfile(hazeState: HazeState, onAction: (ProfileA
         )
     }
 
+    // A caption, not a card — it shouldn't compete with the primary CTA above it.
     item {
-        InfoPanel(
-            title = "Already registered?",
-            body = "Accounts are created for students who completed the offline registration. " +
-                "Check your inbox — we email your college ID and a password.",
-            hazeState = hazeState,
-            intensity = GlassIntensity.REDUCED
+        Text(
+            text = "Already registered? We've emailed your login credentials to your inbox.",
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp)
         )
     }
 
     item { SectionLabel(text = "About Innogeeks", modifier = Modifier.padding(top = 10.dp)) }
 
     item {
-        InfoPanel(
-            title = "A student tech community at KIET",
-            body = "We build, break and ship things together — hackathons, workshops, " +
-                "research projects and open source, run entirely by students.",
+        ExpandableRow(
+            title = "Student tech community",
+            subtitle = "Hackathons, workshops & open source at KIET",
+            isExpanded = expandedSection == ProfileSection.ABOUT,
+            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ABOUT)) },
             hazeState = hazeState,
-            intensity = GlassIntensity.REDUCED
-        )
+            leading = {
+                IconChip(emoji = "🚀", background = MaterialTheme.colorScheme.primary)
+            }
+        ) {
+            Text(
+                text = "We build, break and ship things together — hackathons, workshops, " +
+                    "research projects and open source, run entirely by students.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 
     item {
-        InfoPanel(
+        ExpandableRow(
             title = "Domains & how to join",
-            body = "Web Dev · App Dev · AI / ML · AR / VR · Cybersecurity · Design — open the " +
-                "Domains tab to see what each one works on. Recruitment opens once a year: " +
-                "register during the offline drive, clear the aptitude test and the interview.",
+            subtitle = "5 domains · register → test → interview",
+            isExpanded = expandedSection == ProfileSection.JOIN,
+            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.JOIN)) },
             hazeState = hazeState,
-            intensity = GlassIntensity.REDUCED
+            leading = {
+                IconChip(emoji = "🎓", background = MaterialTheme.colorScheme.secondaryContainer)
+            }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DomainChipRow(
+                    domains = listOf("Web Dev", "App Dev", "Machine Learning", "AR / VR", "IoT")
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    JoinStep(number = 1, text = "Register during the offline recruitment drive.")
+                    JoinStep(number = 2, text = "Clear the aptitude test.")
+                    JoinStep(number = 3, text = "Clear the interview. Recruitment opens once a year.")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DomainChipRow(domains: List<String>, modifier: Modifier = Modifier) {
+    val accent = MaterialTheme.colorScheme.primary
+    androidx.compose.foundation.layout.FlowRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        domains.forEach { domain ->
+            Text(
+                text = domain,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(accent.copy(alpha = 0.14f))
+                    .border(1.dp, accent.copy(alpha = 0.45f), RoundedCornerShape(percent = 50))
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun JoinStep(number: Int, text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .clip(RoundedCornerShape(percent = 50))
+                .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = number.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -315,6 +414,36 @@ private fun LazyListScope.registeredProfile(
     }
 
     item {
+        ExpandableRow(
+            title = "Account & Data",
+            subtitle = "Manage your account",
+            isExpanded = state.expandedSection == ProfileSection.ACCOUNT,
+            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ACCOUNT)) },
+            hazeState = hazeState,
+            leading = { IconChip(emoji = "🔒", background = MaterialTheme.colorScheme.error) }
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Deleting your account is permanent once the grace period ends.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Delete my account",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                    modifier = Modifier.clickable(
+                        onClick = { onAction(ProfileAction.OnDeleteAccountClick) }
+                    )
+                )
+            }
+        }
+    }
+
+    item {
         ProfileButton(
             text = "Log Out",
             isPrimary = false,
@@ -377,6 +506,88 @@ private fun LogOutDialog(
                 TextButton(onClick = onDismiss) { Text(text = "Cancel") }
                 TextButton(onClick = onConfirm) {
                     Text(text = "Log Out", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
+}
+
+// Same rendered-in-place approach as LogOutDialog. Requires typing "DELETE" before the
+// confirm button enables — destructive actions here are gated the same way elsewhere.
+@Composable
+private fun DeleteAccountDialog(
+    hazeState: HazeState,
+    confirmationInput: String,
+    onConfirmationInputChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    BackHandler(onBack = onDismiss)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            )
+            // Pushes the centered card up as the IME opens (and back down as it closes) —
+            // this dialog is a plain overlay Box, not a system Dialog, so it needs this itself.
+            .imePadding(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 32.dp)
+                .fillMaxWidth()
+                .liquidGlass(hazeState = hazeState, cornerRadius = 24.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}
+                )
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Delete your account?",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Your account will be scheduled for deletion. We'll process the " +
+                    "request and send you an update at your registered email once it's done. " +
+                    "Logging back in within 14 days cancels it — after that, your profile data " +
+                    "is permanently erased (recruitment records are kept in anonymized form).",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Questions? Write to innogeeks@kiet.edu.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OutlinedTextField(
+                value = confirmationInput,
+                onValueChange = onConfirmationInputChange,
+                label = { Text("Type DELETE to confirm") },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDismiss) { Text(text = "Cancel") }
+                TextButton(
+                    onClick = onConfirm,
+                    enabled = confirmationInput == "DELETE"
+                ) {
+                    Text(text = "Delete Account", color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -711,7 +922,7 @@ private fun ProfileScreenAccessDeniedPreview() {
         ProfileScreen(
             state = ProfileState(
                 session = registeredSession,
-                profileError = UiText.StringResource(com.example.innogeeks.R.string.error_app_access_denied)
+                profileError = UiText.StringResource(edu.kiet.innogeeks.R.string.error_app_access_denied)
             ),
             hazeState = HazeState(),
             onAction = {}
@@ -755,6 +966,34 @@ private fun ProfileScreenLogOutDialogPreview() {
     InnogeeksTheme {
         ProfileScreen(
             state = ProfileState(session = registeredSession, isLogOutDialogVisible = true),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenDeleteAccountDialogPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(session = registeredSession, isDeleteAccountDialogVisible = true),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenDeleteAccountConfirmedPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                isDeleteAccountDialogVisible = true,
+                deleteConfirmationInput = "DELETE"
+            ),
             hazeState = HazeState(),
             onAction = {}
         )

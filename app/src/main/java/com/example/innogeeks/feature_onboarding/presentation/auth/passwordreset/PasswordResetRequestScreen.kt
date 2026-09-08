@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import com.example.innogeeks.core.presentation.ObserveAsEvents
 import com.example.innogeeks.core.presentation.UiText
 import com.example.innogeeks.feature_onboarding.presentation.auth.AuthFormError

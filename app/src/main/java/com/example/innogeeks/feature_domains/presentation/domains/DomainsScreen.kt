@@ -3,6 +3,7 @@ package com.example.innogeeks.feature_domains.presentation.domains
 import android.content.res.Configuration
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -134,8 +135,9 @@ fun DomainsScreen(
             return@Box
         }
 
-        // Fixed (non-scrolling) 2-column grid whose rows share the leftover height equally,
-        // so the 6 domain cards always fill the screen edge-to-edge with no dead space below.
+        // Fixed (non-scrolling) grid whose rows share the leftover height equally, so the
+        // domain cards always fill the screen edge-to-edge with no dead space below.
+        // Rows follow a 2/1/2 pattern rather than a plain 2-column wrap.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -162,11 +164,16 @@ fun DomainsScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                state.domains.chunked(2).forEach { rowDomains ->
+                val columns = 2
+                state.domains.chunkedByRowPattern(rowPattern = listOf(2, 1, 2)).forEach { rowDomains ->
                     Row(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        // Centers a shorter row by splitting the leftover columns evenly on both sides,
+                        // instead of dumping it all as trailing space.
+                        val sideSpace = (columns - rowDomains.size) / 2f
+                        if (sideSpace > 0f) Spacer(modifier = Modifier.weight(sideSpace))
                         rowDomains.forEach { domain ->
                             DomainSquareCard(
                                 domain = domain,
@@ -175,14 +182,26 @@ fun DomainsScreen(
                                 modifier = Modifier.weight(1f).fillMaxHeight()
                             )
                         }
-                        if (rowDomains.size < 2) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+                        if (sideSpace > 0f) Spacer(modifier = Modifier.weight(sideSpace))
                     }
                 }
             }
         }
     }
+}
+
+// Splits into rows of the given sizes, cycling the pattern if more items remain than it covers.
+private fun <T> List<T>.chunkedByRowPattern(rowPattern: List<Int>): List<List<T>> {
+    val rows = mutableListOf<List<T>>()
+    var index = 0
+    var patternIndex = 0
+    while (index < size) {
+        val rowSize = rowPattern[patternIndex % rowPattern.size]
+        rows.add(subList(index, minOf(index + rowSize, size)))
+        index += rowSize
+        patternIndex++
+    }
+    return rows
 }
 
 // Collapsed grid cell — mirrors .ev-card/.ev-tile/.ev-disc/.ev-card-label from the events
@@ -195,12 +214,19 @@ private fun DomainSquareCard(
     modifier: Modifier = Modifier
 ) {
     val scheme = MaterialTheme.colorScheme
-    Column(modifier = modifier.clickable(onClick = onClick)) {
+    Column(modifier = modifier) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .liquidGlass(hazeState = hazeState, cornerRadius = 24.dp),
+                .liquidGlass(hazeState = hazeState, cornerRadius = 24.dp)
+                // clickable goes after liquidGlass (which already clips to this rounded shape) so
+                // the tap feedback is confined to the card, not a full rectangle over the label too.
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick
+                ),
             contentAlignment = Alignment.Center
         ) {
             BlobBackground(seed = domain.id.hashCode(), modifier = Modifier.fillMaxSize())
@@ -220,8 +246,8 @@ private fun DomainSquareCard(
                 text = domain.name,
                 fontFamily = displayFontFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.5.sp,
-                lineHeight = 15.sp,
+                fontSize = 14.sp,
+                lineHeight = 17.sp,
                 color = scheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -229,10 +255,12 @@ private fun DomainSquareCard(
             )
             Text(
                 text = domain.tagline,
-                fontSize = 10.5.sp,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
                 color = scheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                minLines = 2,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 2.dp)
             )
@@ -246,7 +274,6 @@ private fun domainIconRes(domainId: String): Int = when (domainId) {
     "appd" -> R.drawable.ic_domain_appd
     "ml" -> R.drawable.ic_domain_ml
     "arvr" -> R.drawable.ic_domain_arvr
-    "blockchain" -> R.drawable.ic_domain_blockchain
     else -> R.drawable.ic_domain_iot
 }
 

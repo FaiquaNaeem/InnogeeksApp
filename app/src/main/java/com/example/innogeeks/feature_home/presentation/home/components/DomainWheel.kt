@@ -43,8 +43,6 @@ import kotlin.math.hypot
 import kotlin.math.pow
 import kotlin.math.sin
 
-private const val WEDGE_COUNT = 6
-private const val WEDGE_SWEEP = 360f / WEDGE_COUNT
 private const val IDLE_SPEED_DEG_PER_SEC = 4f
 private const val SNAP_DURATION_MS = 900f
 private const val HOLD_DURATION_MS = 1300f
@@ -60,6 +58,9 @@ fun DomainWheel(
 ) {
     if (domains.isEmpty()) return
 
+    // Wedge count follows the list so slices stay symmetric regardless of how many domains exist.
+    val wedgeSweep = 360f / domains.size
+
     val textMeasurer = rememberTextMeasurer()
 
     var rotation by remember { mutableFloatStateOf(0f) }
@@ -73,7 +74,7 @@ fun DomainWheel(
     LaunchedEffect(selectedId, domains) {
         val index = domains.indexOfFirst { it.id == selectedId }
         if (index < 0) return@LaunchedEffect
-        val midAngle = index * WEDGE_SWEEP + WEDGE_SWEEP / 2f
+        val midAngle = index * wedgeSweep + wedgeSweep / 2f
         val desired = ((-midAngle % 360f) + 360f) % 360f
         val turns = ((rotation - desired) / 360f).let { Math.round(it) }
         snapFrom = rotation
@@ -158,7 +159,7 @@ fun DomainWheel(
                         // atan2 gives the tap's angle; subtracting rotation maps it back to a fixed wedge.
                         val tapAngle = Math.toDegrees(atan2(dy, dx).toDouble()).toFloat()
                         val unrotated = (((tapAngle - rotation) % 360f) + 360f) % 360f
-                        val index = (unrotated / WEDGE_SWEEP).toInt().coerceIn(0, domains.lastIndex)
+                        val index = (unrotated / wedgeSweep).toInt().coerceIn(0, domains.lastIndex)
                         onDomainSelected(domains[index].id)
                     }
                 }
@@ -167,14 +168,14 @@ fun DomainWheel(
             val centre = Offset(size.width / 2f, size.height / 2f)
 
             domains.forEachIndexed { index, domain ->
-                val startAngle = index * WEDGE_SWEEP + rotation
+                val startAngle = index * wedgeSweep + rotation
                 val isSelected = domain.id == selectedId
                 val fill = wedgeColors[index % wedgeColors.size]
 
                 drawArc(
                     color = fill,
                     startAngle = startAngle,
-                    sweepAngle = WEDGE_SWEEP,
+                    sweepAngle = wedgeSweep,
                     useCenter = true,
                     alpha = if (isSelected) 1f else 0.8f,
                     topLeft = Offset(centre.x - radius, centre.y - radius),
@@ -183,7 +184,7 @@ fun DomainWheel(
                 drawArc(
                     color = strokeColor,
                     startAngle = startAngle,
-                    sweepAngle = WEDGE_SWEEP,
+                    sweepAngle = wedgeSweep,
                     useCenter = true,
                     style = Stroke(width = if (isSelected) 3.dp.toPx() else 1.5.dp.toPx()),
                     topLeft = Offset(centre.x - radius, centre.y - radius),
@@ -193,7 +194,7 @@ fun DomainWheel(
 
             // Labels are drawn after the wedges and counter-rotated so they stay upright.
             domains.forEachIndexed { index, domain ->
-                val midAngle = index * WEDGE_SWEEP + WEDGE_SWEEP / 2f + rotation
+                val midAngle = index * wedgeSweep + wedgeSweep / 2f + rotation
                 val midRad = Math.toRadians(midAngle.toDouble())
                 val labelRadius = radius * 0.62f
                 val labelCentre = Offset(
@@ -287,6 +288,5 @@ internal val previewDomains = listOf(
     DomainPreview("appd", "App Dev", "APP D", "Native & cross-platform builders shipping Android and iOS apps."),
     DomainPreview("ml", "Machine Learning", "ML", "Model-training practitioners chasing leaderboard ranks."),
     DomainPreview("arvr", "AR / VR", "AR VR", "Immersive tinkerers building spatial experiences with Unity & WebXR."),
-    DomainPreview("blockchain", "Blockchain", "CHAIN", "Smart contracts, chains, and Web3 tooling explorers."),
     DomainPreview("iot", "IoT", "IOT", "Hardware and firmware hackers wiring sensors to the real world.")
 )

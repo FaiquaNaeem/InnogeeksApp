@@ -1,6 +1,6 @@
 package com.example.innogeeks.feature_events.data
 
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import com.example.innogeeks.feature_events.domain.EventsRepository
 import com.example.innogeeks.feature_events.domain.model.ClubEvent
 import kotlinx.datetime.LocalDate

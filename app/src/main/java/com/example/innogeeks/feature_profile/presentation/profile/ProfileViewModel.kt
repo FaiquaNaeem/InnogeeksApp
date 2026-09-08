@@ -85,6 +85,30 @@ class ProfileViewModel(
                 _state.update { it.copy(isEditing = false, saveError = null) }
 
             ProfileAction.OnSaveClick -> saveProfile()
+
+            ProfileAction.OnDeleteAccountClick -> _state.update {
+                it.copy(isDeleteAccountDialogVisible = true, deleteConfirmationInput = "")
+            }
+
+            ProfileAction.OnDeleteAccountDismissed -> _state.update {
+                it.copy(isDeleteAccountDialogVisible = false, deleteConfirmationInput = "")
+            }
+
+            is ProfileAction.OnDeleteConfirmationInputChange -> _state.update {
+                it.copy(deleteConfirmationInput = action.value)
+            }
+
+            // Deletion-request endpoint isn't built yet — signs out locally in the meantime.
+            ProfileAction.OnDeleteAccountConfirmed -> viewModelScope.launch {
+                _state.update {
+                    it.copy(
+                        isDeleteAccountDialogVisible = false,
+                        deleteConfirmationInput = "",
+                        expandedSection = null
+                    )
+                }
+                sessionRepository.signOut()
+            }
         }
     }
 

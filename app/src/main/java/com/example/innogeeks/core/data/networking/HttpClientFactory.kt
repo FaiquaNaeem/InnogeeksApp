@@ -1,6 +1,6 @@
 package com.example.innogeeks.core.data.networking
 
-import com.example.innogeeks.BuildConfig
+import edu.kiet.innogeeks.BuildConfig
 import com.example.innogeeks.core.domain.session.SessionRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine

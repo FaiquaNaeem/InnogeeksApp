@@ -1,7 +1,7 @@
 package com.example.innogeeks.feature_resources.presentation.resources.components
 
 import androidx.compose.ui.graphics.Color
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import com.example.innogeeks.feature_resources.domain.model.ResourceType
 
 // One accent + label per resource type, shared by the browser feed, filter bar and detail screen.

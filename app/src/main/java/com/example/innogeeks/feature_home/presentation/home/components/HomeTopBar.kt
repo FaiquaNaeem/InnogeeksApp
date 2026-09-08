@@ -25,7 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import com.example.innogeeks.ui.theme.InnogeeksTheme
 
 // Logo lockup on the left; the right side is an avatar for a registered user and a Log in

@@ -2,7 +2,7 @@ package com.example.innogeeks.feature_onboarding.presentation.intro
 
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 
 // One intro slide's content. Immutable so Compose can skip recomposition safely.
 @Immutable

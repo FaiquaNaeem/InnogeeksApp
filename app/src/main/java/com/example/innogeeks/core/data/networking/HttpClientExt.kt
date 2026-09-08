@@ -1,6 +1,6 @@
 package com.example.innogeeks.core.data.networking
 
-import com.example.innogeeks.BuildConfig
+import edu.kiet.innogeeks.BuildConfig
 import com.example.innogeeks.core.domain.error.ApiFailure
 import com.example.innogeeks.core.domain.error.DataError
 import com.example.innogeeks.core.domain.util.Result

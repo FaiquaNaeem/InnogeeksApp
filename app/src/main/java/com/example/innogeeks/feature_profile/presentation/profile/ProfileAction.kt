@@ -12,4 +12,8 @@ sealed interface ProfileAction {
     data class OnPhoneChange(val value: String) : ProfileAction
     data object OnSaveClick : ProfileAction
     data object OnCancelEditClick : ProfileAction
+    data object OnDeleteAccountClick : ProfileAction
+    data object OnDeleteAccountDismissed : ProfileAction
+    data class OnDeleteConfirmationInputChange(val value: String) : ProfileAction
+    data object OnDeleteAccountConfirmed : ProfileAction
 }

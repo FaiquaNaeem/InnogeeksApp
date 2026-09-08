@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.innogeeks.R
+import edu.kiet.innogeeks.R
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -246,8 +246,8 @@ private fun DomainSquareCard(
                 text = domain.name,
                 fontFamily = displayFontFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.5.sp,
-                lineHeight = 15.sp,
+                fontSize = 14.sp,
+                lineHeight = 17.sp,
                 color = scheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -255,8 +255,8 @@ private fun DomainSquareCard(
             )
             Text(
                 text = domain.tagline,
-                fontSize = 10.5.sp,
-                lineHeight = 13.sp,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
                 color = scheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 minLines = 2,

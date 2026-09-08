@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -118,6 +119,16 @@ fun ProfileScreen(
                 hazeState = hazeState,
                 onConfirm = { onAction(ProfileAction.OnLogOutConfirmed) },
                 onDismiss = { onAction(ProfileAction.OnLogOutDismissed) }
+            )
+        }
+
+        if (state.isDeleteAccountDialogVisible) {
+            DeleteAccountDialog(
+                hazeState = hazeState,
+                confirmationInput = state.deleteConfirmationInput,
+                onConfirmationInputChange = { onAction(ProfileAction.OnDeleteConfirmationInputChange(it)) },
+                onConfirm = { onAction(ProfileAction.OnDeleteAccountConfirmed) },
+                onDismiss = { onAction(ProfileAction.OnDeleteAccountDismissed) }
             )
         }
     }
@@ -403,6 +414,36 @@ private fun LazyListScope.registeredProfile(
     }
 
     item {
+        ExpandableRow(
+            title = "Account & Data",
+            subtitle = "Manage your account",
+            isExpanded = state.expandedSection == ProfileSection.ACCOUNT,
+            onToggle = { onAction(ProfileAction.OnSectionToggled(ProfileSection.ACCOUNT)) },
+            hazeState = hazeState,
+            leading = { IconChip(emoji = "🔒", background = MaterialTheme.colorScheme.error) }
+        ) {
+            Column(
+                modifier = Modifier.padding(vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Deleting your account is permanent once the grace period ends.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Delete my account",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.85f),
+                    modifier = Modifier.clickable(
+                        onClick = { onAction(ProfileAction.OnDeleteAccountClick) }
+                    )
+                )
+            }
+        }
+    }
+
+    item {
         ProfileButton(
             text = "Log Out",
             isPrimary = false,
@@ -465,6 +506,88 @@ private fun LogOutDialog(
                 TextButton(onClick = onDismiss) { Text(text = "Cancel") }
                 TextButton(onClick = onConfirm) {
                     Text(text = "Log Out", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
+}
+
+// Same rendered-in-place approach as LogOutDialog. Requires typing "DELETE" before the
+// confirm button enables — destructive actions here are gated the same way elsewhere.
+@Composable
+private fun DeleteAccountDialog(
+    hazeState: HazeState,
+    confirmationInput: String,
+    onConfirmationInputChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    BackHandler(onBack = onDismiss)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            )
+            // Pushes the centered card up as the IME opens (and back down as it closes) —
+            // this dialog is a plain overlay Box, not a system Dialog, so it needs this itself.
+            .imePadding(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 32.dp)
+                .fillMaxWidth()
+                .liquidGlass(hazeState = hazeState, cornerRadius = 24.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}
+                )
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Delete your account?",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "Your account will be scheduled for deletion. We'll process the " +
+                    "request and send you an update at your registered email once it's done. " +
+                    "Logging back in within 14 days cancels it — after that, your profile data " +
+                    "is permanently erased (recruitment records are kept in anonymized form).",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Questions? Write to innogeeks@kiet.edu.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OutlinedTextField(
+                value = confirmationInput,
+                onValueChange = onConfirmationInputChange,
+                label = { Text("Type DELETE to confirm") },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onDismiss) { Text(text = "Cancel") }
+                TextButton(
+                    onClick = onConfirm,
+                    enabled = confirmationInput == "DELETE"
+                ) {
+                    Text(text = "Delete Account", color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -799,7 +922,7 @@ private fun ProfileScreenAccessDeniedPreview() {
         ProfileScreen(
             state = ProfileState(
                 session = registeredSession,
-                profileError = UiText.StringResource(com.example.innogeeks.R.string.error_app_access_denied)
+                profileError = UiText.StringResource(edu.kiet.innogeeks.R.string.error_app_access_denied)
             ),
             hazeState = HazeState(),
             onAction = {}
@@ -843,6 +966,34 @@ private fun ProfileScreenLogOutDialogPreview() {
     InnogeeksTheme {
         ProfileScreen(
             state = ProfileState(session = registeredSession, isLogOutDialogVisible = true),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenDeleteAccountDialogPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(session = registeredSession, isDeleteAccountDialogVisible = true),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenDeleteAccountConfirmedPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                isDeleteAccountDialogVisible = true,
+                deleteConfirmationInput = "DELETE"
+            ),
             hazeState = HazeState(),
             onAction = {}
         )

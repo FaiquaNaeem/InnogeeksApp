@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.innogeeks"
+    namespace = "edu.kiet.innogeeks"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.innogeeks"
+        applicationId = "edu.kiet.innogeeks"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

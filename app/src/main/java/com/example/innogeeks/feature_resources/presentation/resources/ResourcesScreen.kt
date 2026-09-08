@@ -185,11 +185,16 @@ fun ResourcesScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                state.domains.chunked(2).forEach { rowDomains ->
+                val columns = 2
+                state.domains.chunkedByRowPattern(rowPattern = listOf(2, 1, 2)).forEach { rowDomains ->
                     Row(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        // Centers a shorter row by splitting the leftover columns evenly on both sides,
+                        // instead of dumping it all as trailing space.
+                        val sideSpace = (columns - rowDomains.size) / 2f
+                        if (sideSpace > 0f) Spacer(modifier = Modifier.weight(sideSpace))
                         rowDomains.forEach { domain ->
                             ResourceDomainCard(
                                 domain = domain,
@@ -201,14 +206,26 @@ fun ResourcesScreen(
                                     .fillMaxHeight()
                             )
                         }
-                        if (rowDomains.size < 2) {
-                            Spacer(modifier = Modifier.weight(1f))
-                        }
+                        if (sideSpace > 0f) Spacer(modifier = Modifier.weight(sideSpace))
                     }
                 }
             }
         }
     }
+}
+
+// Splits into rows of the given sizes, cycling the pattern if more items remain than it covers.
+private fun <T> List<T>.chunkedByRowPattern(rowPattern: List<Int>): List<List<T>> {
+    val rows = mutableListOf<List<T>>()
+    var index = 0
+    var patternIndex = 0
+    while (index < size) {
+        val rowSize = rowPattern[patternIndex % rowPattern.size]
+        rows.add(subList(index, minOf(index + rowSize, size)))
+        index += rowSize
+        patternIndex++
+    }
+    return rows
 }
 
 @Composable
@@ -257,15 +274,16 @@ private fun ResourceDomainCard(
                 text = domain.name,
                 fontFamily = displayFontFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                lineHeight = 17.sp,
+                fontSize = 17.5.sp,
+                lineHeight = 21.sp,
                 color = scheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = domain.tagline,
-                fontSize = 9.5.sp,
+                fontSize = 13.sp,
+                lineHeight = 16.sp,
                 color = scheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -278,9 +296,9 @@ private fun ResourceDomainCard(
             ) {
                 Text(
                     text = "$resourceCount resource${if (resourceCount != 1) "s" else ""}",
-                    fontSize = 8.5.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
+                    letterSpacing = 0.3.sp,
                     color = accent
                 )
                 Box(

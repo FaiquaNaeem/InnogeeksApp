@@ -126,6 +126,8 @@ fun ProfileScreen(
             DeleteAccountDialog(
                 hazeState = hazeState,
                 confirmationInput = state.deleteConfirmationInput,
+                isRequesting = state.isRequestingDeletion,
+                error = state.deleteAccountError,
                 onConfirmationInputChange = { onAction(ProfileAction.OnDeleteConfirmationInputChange(it)) },
                 onConfirm = { onAction(ProfileAction.OnDeleteAccountConfirmed) },
                 onDismiss = { onAction(ProfileAction.OnDeleteAccountDismissed) }
@@ -518,6 +520,8 @@ private fun LogOutDialog(
 private fun DeleteAccountDialog(
     hazeState: HazeState,
     confirmationInput: String,
+    isRequesting: Boolean,
+    error: UiText?,
     onConfirmationInputChange: (String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
@@ -575,19 +579,30 @@ private fun DeleteAccountDialog(
                 onValueChange = onConfirmationInputChange,
                 label = { Text("Type DELETE to confirm") },
                 singleLine = true,
+                enabled = !isRequesting,
                 colors = OutlinedTextFieldDefaults.colors(),
                 modifier = Modifier.fillMaxWidth()
             )
+            error?.let {
+                Text(
+                    text = it.asString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onDismiss) { Text(text = "Cancel") }
+                TextButton(onClick = onDismiss, enabled = !isRequesting) { Text(text = "Cancel") }
                 TextButton(
                     onClick = onConfirm,
-                    enabled = confirmationInput == "DELETE"
+                    enabled = confirmationInput == "DELETE" && !isRequesting
                 ) {
-                    Text(text = "Delete Account", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        text = if (isRequesting) "Deleting…" else "Delete Account",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -993,6 +1008,40 @@ private fun ProfileScreenDeleteAccountConfirmedPreview() {
                 session = registeredSession,
                 isDeleteAccountDialogVisible = true,
                 deleteConfirmationInput = "DELETE"
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenDeleteAccountRequestingPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                isDeleteAccountDialogVisible = true,
+                deleteConfirmationInput = "DELETE",
+                isRequestingDeletion = true
+            ),
+            hazeState = HazeState(),
+            onAction = {}
+        )
+    }
+}
+
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)
+@Composable
+private fun ProfileScreenDeleteAccountErrorPreview() {
+    InnogeeksTheme {
+        ProfileScreen(
+            state = ProfileState(
+                session = registeredSession,
+                isDeleteAccountDialogVisible = true,
+                deleteConfirmationInput = "DELETE",
+                deleteAccountError = UiText.DynamicString("Something went wrong. Please try again.")
             ),
             hazeState = HazeState(),
             onAction = {}

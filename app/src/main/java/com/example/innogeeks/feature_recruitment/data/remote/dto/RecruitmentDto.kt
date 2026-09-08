@@ -31,3 +31,36 @@ data class InterviewDto(
     val location: String? = null,
     val meetingUrl: String? = null
 )
+
+// GET /test-slot-booking — richer than RecruitmentDto.testSlot (carries the slot id and
+// when the admin made the assignment); a 404 TEST_SLOT_NOT_BOOKED means no slot yet, not
+// an error to recover from, so callers see that as DataError.Network.NOT_FOUND.
+@Serializable
+data class TestSlotBookingResponseDto(
+    val data: TestSlotBookingDto
+)
+
+@Serializable
+data class TestSlotBookingDto(
+    val testSlotId: String,
+    val startTime: String,
+    val endTime: String,
+    val bookedAt: String
+)
+
+// GET /interview-booking — same relationship to RecruitmentDto.interview as the test-slot
+// pair above; 404 INTERVIEW_SLOT_NOT_BOOKED means not assigned yet.
+@Serializable
+data class InterviewBookingResponseDto(
+    val data: InterviewBookingDto
+)
+
+@Serializable
+data class InterviewBookingDto(
+    val interviewSlotId: String,
+    val startTime: String,
+    val endTime: String,
+    val location: String? = null,
+    val meetingUrl: String? = null,
+    val bookedAt: String
+)

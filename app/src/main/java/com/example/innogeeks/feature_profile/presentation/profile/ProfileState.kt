@@ -17,7 +17,9 @@ data class ProfileState(
     val isSaving: Boolean = false,
     val saveError: UiText? = null,
     val isDeleteAccountDialogVisible: Boolean = false,
-    val deleteConfirmationInput: String = ""
+    val deleteConfirmationInput: String = "",
+    val isRequestingDeletion: Boolean = false,
+    val deleteAccountError: UiText? = null
 )
 
 enum class ProfileSection { ACADEMIC, CLUB, ABOUT, JOIN, ACCOUNT }

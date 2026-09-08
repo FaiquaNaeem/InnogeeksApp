@@ -1,6 +1,8 @@
 package com.example.innogeeks.feature_profile.data.mapper
 
+import com.example.innogeeks.feature_profile.data.remote.dto.AccountDeletionRequestDto
 import com.example.innogeeks.feature_profile.data.remote.dto.ProfileDto
+import com.example.innogeeks.feature_profile.domain.model.AccountDeletionSchedule
 import com.example.innogeeks.feature_profile.domain.model.StudentProfile
 
 fun ProfileDto.toStudentProfile(): StudentProfile = StudentProfile(
@@ -12,3 +14,6 @@ fun ProfileDto.toStudentProfile(): StudentProfile = StudentProfile(
     role = role,
     domain = domain
 )
+
+fun AccountDeletionRequestDto.toAccountDeletionSchedule(): AccountDeletionSchedule =
+    AccountDeletionSchedule(requestedAt = deletionRequestedAt, scheduledFor = scheduledFor)

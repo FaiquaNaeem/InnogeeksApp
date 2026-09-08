@@ -41,16 +41,18 @@ object HttpClientFactory {
                 level = if (BuildConfig.DEBUG) LogLevel.HEADERS else LogLevel.NONE
             }
 
-            // Attaches the stored token as a Bearer header on every request.
-            // No refreshTokens block: the contract has no refresh endpoint, so a 401 is
-            // terminal and handled by dropping to guest mode.
+            // Attaches the stored token as a Bearer header on every request. loadTokens() is
+            // called once and its result CACHED for this HttpClient's whole lifetime — if it's
+            // ever called before a token exists (e.g. the very first authenticated call, made
+            // right after login, can race the DataStore write), that null gets stuck forever
+            // and every later call fails with 401, even after the token is actually written.
+            // refreshTokens re-reads the same source on any 401, which both recovers from that
+            // race and covers a genuinely dead token — no real refresh endpoint is needed since
+            // this doesn't call the backend, it just re-checks local storage once.
             install(Auth) {
                 bearer {
-                    loadTokens {
-                        sessionRepository.currentAccessToken()?.let { token ->
-                            BearerTokens(accessToken = token, refreshToken = "")
-                        }
-                    }
+                    loadTokens { sessionRepository.currentAccessToken()?.let { BearerTokens(accessToken = it, refreshToken = "") } }
+                    refreshTokens { sessionRepository.currentAccessToken()?.let { BearerTokens(accessToken = it, refreshToken = "") } }
                 }
             }
 

@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
+
+// Reads `apiBaseUrl=...` from local.properties (gitignored, per-machine) so each dev can
+// point at their own backend without touching a committed file. Falls back to the
+// placeholder below when the key is absent, so a fresh checkout still builds.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+val apiBaseUrl: String = localProperties.getProperty("apiBaseUrl") ?: "https://api.innogeeks.example"
 
 android {
     namespace = "edu.kiet.innogeeks"
@@ -18,7 +31,7 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        buildConfigField("String", "BASE_URL", "\"https://api.innogeeks.example\"")
+        buildConfigField("String", "BASE_URL", "\"$apiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

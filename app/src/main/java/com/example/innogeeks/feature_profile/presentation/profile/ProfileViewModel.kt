@@ -7,6 +7,7 @@ import com.example.innogeeks.core.domain.session.SessionRepository
 import com.example.innogeeks.core.domain.util.Result
 import com.example.innogeeks.core.presentation.mapper.toUiText
 import com.example.innogeeks.feature_profile.domain.use_case.GetProfileUseCase
+import com.example.innogeeks.feature_profile.domain.use_case.RequestAccountDeletionUseCase
 import com.example.innogeeks.feature_profile.domain.use_case.UpdateProfileUseCase
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,8 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(
     private val sessionRepository: SessionRepository,
     private val getProfileUseCase: GetProfileUseCase,
-    private val updateProfileUseCase: UpdateProfileUseCase
+    private val updateProfileUseCase: UpdateProfileUseCase,
+    private val requestAccountDeletionUseCase: RequestAccountDeletionUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
@@ -91,23 +93,38 @@ class ProfileViewModel(
             }
 
             ProfileAction.OnDeleteAccountDismissed -> _state.update {
-                it.copy(isDeleteAccountDialogVisible = false, deleteConfirmationInput = "")
+                it.copy(isDeleteAccountDialogVisible = false, deleteConfirmationInput = "", deleteAccountError = null)
             }
 
             is ProfileAction.OnDeleteConfirmationInputChange -> _state.update {
                 it.copy(deleteConfirmationInput = action.value)
             }
 
-            // Deletion-request endpoint isn't built yet — signs out locally in the meantime.
-            ProfileAction.OnDeleteAccountConfirmed -> viewModelScope.launch {
-                _state.update {
-                    it.copy(
-                        isDeleteAccountDialogVisible = false,
-                        deleteConfirmationInput = "",
-                        expandedSection = null
-                    )
+            ProfileAction.OnDeleteAccountConfirmed -> requestAccountDeletion()
+        }
+    }
+
+    // Calls the real backend endpoint — this both starts the 14-day grace period server-side
+    // AND revokes the current token in the same request (APP_API_CONTRACT.md §16.1), so
+    // signOut() here is just clearing local state to match what the server already did.
+    private fun requestAccountDeletion() {
+        viewModelScope.launch {
+            _state.update { it.copy(isRequestingDeletion = true, deleteAccountError = null) }
+            when (val result = requestAccountDeletionUseCase()) {
+                is Result.Success -> {
+                    _state.update {
+                        it.copy(
+                            isRequestingDeletion = false,
+                            isDeleteAccountDialogVisible = false,
+                            deleteConfirmationInput = "",
+                            expandedSection = null
+                        )
+                    }
+                    sessionRepository.signOut()
                 }
-                sessionRepository.signOut()
+                is Result.Error -> _state.update {
+                    it.copy(isRequestingDeletion = false, deleteAccountError = result.error.toUiText())
+                }
             }
         }
     }

@@ -82,13 +82,27 @@ class DefaultAuthFlowRepository(
     }
 
     // Role/domain never come from the login response — only GET /me knows them, same as the
-    // real backend contract. Falls back to REGISTERED if the profile fetch fails so a login
-    // still succeeds even if the profile call has trouble.
+    // real backend contract. The token must be stored BEFORE calling getProfile(): Ktor's Auth
+    // plugin loads the bearer token once via SessionRepository.currentAccessToken() and caches
+    // it for the HttpClient's lifetime (no refreshTokens block is configured), so calling
+    // getProfile() first — with no token yet in the session — makes that first authenticated
+    // call go out with no Authorization header, and it never reloads on later calls either.
+    // Falls back to REGISTERED/null if the profile fetch fails so a login still succeeds even
+    // if the profile call has trouble.
     private suspend fun signIn(accessToken: String, collegeEmail: String) {
+        sessionRepository.signIn(
+            accessToken = accessToken,
+            collegeEmail = collegeEmail,
+            role = UserRole.REGISTERED,
+            domain = null
+        )
         val profile = profileRepository.getProfile()
-        val role = (profile as? Result.Success)?.data?.role?.let(::parseRole) ?: UserRole.REGISTERED
-        val domain = (profile as? Result.Success)?.data?.domain?.let(::parseDomain)
-        sessionRepository.signIn(accessToken = accessToken, collegeEmail = collegeEmail, role = role, domain = domain)
+        if (profile is Result.Success) {
+            sessionRepository.updateRoleAndDomain(
+                role = parseRole(profile.data.role),
+                domain = profile.data.domain?.let(::parseDomain)
+            )
+        }
     }
 
     private fun parseRole(raw: String): UserRole =

@@ -2,9 +2,12 @@ package com.example.innogeeks.feature_profile.data.remote
 
 import com.example.innogeeks.core.domain.error.DataError
 import com.example.innogeeks.core.domain.util.Result
+import com.example.innogeeks.feature_profile.data.remote.dto.AccountDeletionRequestDto
 import com.example.innogeeks.feature_profile.data.remote.dto.ProfileDto
 import com.example.innogeeks.feature_profile.data.remote.dto.UpdateProfileRequestDto
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.days
 
 class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
 
@@ -35,5 +38,21 @@ class FakeProfileRemoteDataSource : ProfileRemoteDataSource {
             phone = request.phone ?: current.phone
         )
         return Result.Success(current)
+    }
+
+    override suspend fun requestAccountDeletion(): Result<AccountDeletionRequestDto, DataError.Network> {
+        delay(600)
+        val now = Clock.System.now()
+        return Result.Success(
+            AccountDeletionRequestDto(
+                deletionRequestedAt = now.toString(),
+                scheduledFor = (now + 14.days).toString()
+            )
+        )
+    }
+
+    override suspend fun cancelAccountDeletion(): Result<Unit, DataError.Network> {
+        delay(400)
+        return Result.Success(Unit)
     }
 }

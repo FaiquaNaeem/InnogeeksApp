@@ -1,12 +1,16 @@
 package com.example.innogeeks.feature_recruitment.data.mapper
 
+import com.example.innogeeks.feature_recruitment.data.remote.dto.InterviewBookingDto
 import com.example.innogeeks.feature_recruitment.data.remote.dto.InterviewDto
 import com.example.innogeeks.feature_recruitment.data.remote.dto.RecruitmentDto
+import com.example.innogeeks.feature_recruitment.data.remote.dto.TestSlotBookingDto
 import com.example.innogeeks.feature_recruitment.data.remote.dto.TestSlotDto
 import com.example.innogeeks.feature_recruitment.domain.model.Decision
 import com.example.innogeeks.feature_recruitment.domain.model.Interview
+import com.example.innogeeks.feature_recruitment.domain.model.InterviewBooking
 import com.example.innogeeks.feature_recruitment.domain.model.RecruitmentStatus
 import com.example.innogeeks.feature_recruitment.domain.model.TestSlot
+import com.example.innogeeks.feature_recruitment.domain.model.TestSlotBooking
 
 fun RecruitmentDto.toRecruitmentStatus(): RecruitmentStatus = RecruitmentStatus(
     paid = paid,
@@ -36,4 +40,20 @@ private fun InterviewDto.toInterview(): Interview = Interview(
     endTime = endTime,
     location = location,
     meetingUrl = meetingUrl
+)
+
+fun TestSlotBookingDto.toTestSlotBooking(): TestSlotBooking = TestSlotBooking(
+    testSlotId = testSlotId,
+    startTime = startTime,
+    endTime = endTime,
+    bookedAt = bookedAt
+)
+
+fun InterviewBookingDto.toInterviewBooking(): InterviewBooking = InterviewBooking(
+    interviewSlotId = interviewSlotId,
+    startTime = startTime,
+    endTime = endTime,
+    location = location,
+    meetingUrl = meetingUrl,
+    bookedAt = bookedAt
 )

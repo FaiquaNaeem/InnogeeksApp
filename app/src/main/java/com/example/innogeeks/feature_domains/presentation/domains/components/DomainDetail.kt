@@ -77,21 +77,22 @@ fun DomainDetail(
             )
         }
 
+        if (team.isNotEmpty()) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionLabel("Core Team")
+                team.forEach { member ->
+                    MemberRow(name = member.name, initials = member.initials, accent = accent, subtitle = "3rd Year · ${domain.name}")
+                }
+            }
+        }
+
         if (coordinators.isNotEmpty()) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SectionLabel("Coordinators")
                 coordinators.forEach { member ->
-                    MemberRow(member = member, accent = accent, subtitle = "2nd Year · ${domain.name}")
-                }
-            }
-        }
-
-        if (team.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionLabel("Core Team")
-                team.forEach { member ->
-                    MemberRow(member = member, accent = accent, subtitle = "3rd Year · ${domain.name}")
+                    MemberRow(name = member.name, initials = member.initials, accent = accent, subtitle = "2nd Year · ${domain.name}")
                 }
             }
         }
@@ -147,10 +148,11 @@ private fun StaggeredChipFlow(
     }
 }
 
-// One row per coordinator or team member — same avatar-and-caption shape as the old lead footer.
+// One row per core team/coordinator/team member — same avatar-and-caption shape as the old lead footer.
 @Composable
 private fun MemberRow(
-    member: DomainMember,
+    name: String,
+    initials: String,
     accent: Color,
     subtitle: String,
     modifier: Modifier = Modifier
@@ -169,7 +171,7 @@ private fun MemberRow(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = member.initials,
+                text = initials,
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.Bold,
                 color = accent
@@ -177,7 +179,7 @@ private fun MemberRow(
         }
         Column {
             Text(
-                text = member.name,
+                text = name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface

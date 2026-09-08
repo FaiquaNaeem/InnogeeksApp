@@ -7,7 +7,8 @@ import com.example.innogeeks.feature_domains.domain.model.DomainMemberRole.COORD
 import com.example.innogeeks.feature_domains.domain.model.DomainMemberRole.TEAM
 
 // Guest-mode data source. No domains endpoint exists yet — swap this for a Ktor-backed
-// implementation once /domains ships; DomainsRepository is the contract callers already code against.
+// implementation once /domains ships; DomainsRepository is the contract callers already code
+// against. Coordinators and team members below are the real 2026-27 lists.
 class InMemoryDomainsRepository : DomainsRepository {
 
     override suspend fun getDomains(): Result<List<Domain>> {
@@ -22,11 +23,15 @@ class InMemoryDomainsRepository : DomainsRepository {
                     memberCount = 18,
                     techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
                     members = listOf(
-                        DomainMember("Priya Sharma", "PS", COORDINATOR),
-                        DomainMember("Rahul Deshmukh", "RD", COORDINATOR),
-                        DomainMember("Ananya Iyer", "AI", TEAM),
-                        DomainMember("Yash Malhotra", "YM", TEAM),
-                        DomainMember("Sneha Pillai", "SP", TEAM)
+                        DomainMember("Arjit Mishra", "AM", COORDINATOR),
+                        DomainMember("Yashika Kataria", "YK", COORDINATOR),
+                        DomainMember("Harsh Dubey", "HD", COORDINATOR),
+                        DomainMember("Mohd Mohtashim", "MM", COORDINATOR),
+                        DomainMember("Himanshu Yadav", "HY", COORDINATOR),
+                        DomainMember("Saumya Sharma", "SS", TEAM),
+                        DomainMember("Pratyush Mehra", "PM", TEAM),
+                        DomainMember("Harsh Joshi", "HJ", TEAM),
+                        DomainMember("Harshit", "HA", TEAM)
                     )
                 ),
                 Domain(
@@ -38,10 +43,13 @@ class InMemoryDomainsRepository : DomainsRepository {
                     memberCount = 14,
                     techStack = listOf("Kotlin", "Flutter", "Firebase", "Jetpack Compose"),
                     members = listOf(
-                        DomainMember("Rohan Verma", "RV", COORDINATOR),
-                        DomainMember("Kavya Reddy", "KR", COORDINATOR),
-                        DomainMember("Arjun Nanda", "AN", TEAM),
-                        DomainMember("Divya Krishnan", "DK", TEAM)
+                        DomainMember("Srijal Kumar", "SK", COORDINATOR),
+                        DomainMember("Aanya Jain", "AJ", COORDINATOR),
+                        DomainMember("Daksh Tomar", "DT", COORDINATOR),
+                        DomainMember("Divyanshi Bhalla", "DB", COORDINATOR),
+                        DomainMember("Atul Kumar Singh", "AS", TEAM),
+                        DomainMember("Faiqua Naeem", "FN", TEAM),
+                        DomainMember("Dhruv Srivastava", "DS", TEAM)
                     )
                 ),
                 Domain(
@@ -53,11 +61,13 @@ class InMemoryDomainsRepository : DomainsRepository {
                     memberCount = 11,
                     techStack = listOf("Python", "TensorFlow", "PyTorch", "Scikit-learn", "Pandas"),
                     members = listOf(
-                        DomainMember("Ananya Gupta", "AG", COORDINATOR),
-                        DomainMember("Vikram Rao", "VR", COORDINATOR),
-                        DomainMember("Nisha Bhat", "NB", TEAM),
-                        DomainMember("Aditya Menon", "AM", TEAM),
-                        DomainMember("Pooja Chawla", "PC", TEAM)
+                        DomainMember("Satyam Jaiswal", "SJ", COORDINATOR),
+                        DomainMember("Sandhya Singh", "SS", COORDINATOR),
+                        DomainMember("Shubhangi Srivastava", "SS", COORDINATOR),
+                        DomainMember("Amogh Vatsa", "AV", COORDINATOR),
+                        DomainMember("Parnay Jaiswal", "PJ", TEAM),
+                        DomainMember("Kanak Verma", "KV", TEAM),
+                        DomainMember("Ayush Pandey", "AP", TEAM)
                     )
                 ),
                 Domain(
@@ -69,9 +79,12 @@ class InMemoryDomainsRepository : DomainsRepository {
                     memberCount = 9,
                     techStack = listOf("Unity", "WebXR", "ARCore", "Blender"),
                     members = listOf(
-                        DomainMember("Karan Mehta", "KM", COORDINATOR),
-                        DomainMember("Ritika Joshi", "RJ", COORDINATOR),
-                        DomainMember("Sameer Khan", "SK", TEAM)
+                        DomainMember("Kumari Alka", "KA", COORDINATOR),
+                        DomainMember("Bhaskar Shukla", "BS", COORDINATOR),
+                        DomainMember("Aman Chaudhary", "AC", COORDINATOR),
+                        DomainMember("Suryansh Patel", "SP", TEAM),
+                        DomainMember("Ayush Chaurasia", "AC", TEAM),
+                        DomainMember("Ayush Saroj", "AS", TEAM)
                     )
                 ),
                 Domain(
@@ -83,9 +96,12 @@ class InMemoryDomainsRepository : DomainsRepository {
                     memberCount = 8,
                     techStack = listOf("Arduino", "Raspberry Pi", "ESP32", "MQTT"),
                     members = listOf(
-                        DomainMember("Meera Nair", "MN", COORDINATOR),
-                        DomainMember("Farhan Sheikh", "FS", COORDINATOR),
-                        DomainMember("Ojas Kulkarni", "OK", TEAM)
+                        DomainMember("Shriti Singh", "SS", COORDINATOR),
+                        DomainMember("Ayush Pathak", "AP", COORDINATOR),
+                        DomainMember("Vansh Baranwal", "VB", COORDINATOR),
+                        DomainMember("Abhsihek Patel", "AP", TEAM),
+                        DomainMember("Yashi Keservani", "YK", TEAM),
+                        DomainMember("Dilip Yadav", "DY", TEAM)
                     )
                 )
             )

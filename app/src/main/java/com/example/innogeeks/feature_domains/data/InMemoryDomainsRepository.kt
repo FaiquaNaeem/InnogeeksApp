@@ -14,6 +14,25 @@ class InMemoryDomainsRepository : DomainsRepository {
     override suspend fun getDomains(): Result<List<Domain>> {
         return Result.success(
             listOf(
+                // App Dev listed first since it's the default selected domain on Home.
+                Domain(
+                    id = "appd",
+                    name = "App Dev",
+                    tagline = "Native & cross-platform builders",
+                    description = "App Dev designs and ships the club's native and cross-platform mobile apps, end to end.",
+                    accentIndex = 1,
+                    memberCount = 14,
+                    techStack = listOf("Kotlin", "Flutter", "Firebase", "Jetpack Compose"),
+                    members = listOf(
+                        DomainMember("Srijal Kumar", "SK", COORDINATOR),
+                        DomainMember("Aanya Jain", "AJ", COORDINATOR),
+                        DomainMember("Daksh Tomar", "DT", COORDINATOR),
+                        DomainMember("Divyanshi Bhalla", "DB", COORDINATOR),
+                        DomainMember("Atul Kumar Singh", "AS", TEAM),
+                        DomainMember("Faiqua Naeem", "FN", TEAM),
+                        DomainMember("Dhruv Srivastava", "DS", TEAM)
+                    )
+                ),
                 Domain(
                     id = "webd",
                     name = "Web Dev",
@@ -35,24 +54,6 @@ class InMemoryDomainsRepository : DomainsRepository {
                     )
                 ),
                 Domain(
-                    id = "appd",
-                    name = "App Dev",
-                    tagline = "Native & cross-platform builders",
-                    description = "App Dev designs and ships the club's native and cross-platform mobile apps, end to end.",
-                    accentIndex = 1,
-                    memberCount = 14,
-                    techStack = listOf("Kotlin", "Flutter", "Firebase", "Jetpack Compose"),
-                    members = listOf(
-                        DomainMember("Srijal Kumar", "SK", COORDINATOR),
-                        DomainMember("Aanya Jain", "AJ", COORDINATOR),
-                        DomainMember("Daksh Tomar", "DT", COORDINATOR),
-                        DomainMember("Divyanshi Bhalla", "DB", COORDINATOR),
-                        DomainMember("Atul Kumar Singh", "AS", TEAM),
-                        DomainMember("Faiqua Naeem", "FN", TEAM),
-                        DomainMember("Dhruv Srivastava", "DS", TEAM)
-                    )
-                ),
-                Domain(
                     id = "ml",
                     name = "Machine Learning",
                     tagline = "Models, data & leaderboard chasing",
@@ -65,7 +66,7 @@ class InMemoryDomainsRepository : DomainsRepository {
                         DomainMember("Sandhya Singh", "SS", COORDINATOR),
                         DomainMember("Shubhangi Srivastava", "SS", COORDINATOR),
                         DomainMember("Amogh Vatsa", "AV", COORDINATOR),
-                        DomainMember("Parnay Jaiswal", "PJ", TEAM),
+                        DomainMember("Pranay Jaiswal", "PJ", TEAM),
                         DomainMember("Kanak Verma", "KV", TEAM),
                         DomainMember("Ayush Pandey", "AP", TEAM)
                     )

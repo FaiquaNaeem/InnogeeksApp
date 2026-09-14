@@ -262,7 +262,7 @@ private fun DomainWheelPreview() {
         Box(modifier = Modifier.padding(vertical = 16.dp)) {
             DomainWheel(
                 domains = previewDomains,
-                selectedId = "webd",
+                selectedId = "appd",
                 onDomainSelected = {}
             )
         }

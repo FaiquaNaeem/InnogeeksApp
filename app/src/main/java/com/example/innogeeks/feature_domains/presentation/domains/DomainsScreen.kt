@@ -409,20 +409,7 @@ private fun BlobBackground(seed: Int, modifier: Modifier = Modifier) {
 }
 
 internal val previewDomainList = listOf(
-    Domain(
-        id = "webd",
-        name = "Web Dev",
-        tagline = "React, Node & everything between",
-        description = "Web Dev builds and maintains all of Innogeeks' web-facing tools, from the club site to event portals.",
-        accentIndex = 0,
-        memberCount = 18,
-        techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
-        members = listOf(
-            DomainMember("Priya Sharma", "PS", DomainMemberRole.COORDINATOR),
-            DomainMember("Rahul Deshmukh", "RD", DomainMemberRole.COORDINATOR),
-            DomainMember("Ananya Iyer", "AI", DomainMemberRole.TEAM)
-        )
-    ),
+    // App Dev listed first to match the real repository's order.
     Domain(
         id = "appd",
         name = "App Dev",
@@ -435,6 +422,20 @@ internal val previewDomainList = listOf(
             DomainMember("Rohan Verma", "RV", DomainMemberRole.COORDINATOR),
             DomainMember("Kavya Reddy", "KR", DomainMemberRole.COORDINATOR),
             DomainMember("Arjun Nanda", "AN", DomainMemberRole.TEAM)
+        )
+    ),
+    Domain(
+        id = "webd",
+        name = "Web Dev",
+        tagline = "React, Node & everything between",
+        description = "Web Dev builds and maintains all of Innogeeks' web-facing tools, from the club site to event portals.",
+        accentIndex = 0,
+        memberCount = 18,
+        techStack = listOf("React", "Node.js", "Tailwind", "MongoDB", "TypeScript"),
+        members = listOf(
+            DomainMember("Priya Sharma", "PS", DomainMemberRole.COORDINATOR),
+            DomainMember("Rahul Deshmukh", "RD", DomainMemberRole.COORDINATOR),
+            DomainMember("Ananya Iyer", "AI", DomainMemberRole.TEAM)
         )
     ),
     Domain(

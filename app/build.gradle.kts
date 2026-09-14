@@ -27,20 +27,30 @@ android {
     defaultConfig {
         applicationId = "edu.kiet.innogeeks"
         minSdk = 24
+        //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "4.0.2"
 
         buildConfigField("String", "BASE_URL", "\"$apiBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // FULL keeps native symbol names in the App Bundle so Play Console can deobfuscate NDK crashes.
+        ndk {
+            debugSymbolLevel = "FULL"
+        }
     }
 
     buildTypes {
         release {
-            optimization {
-                enable = false
-            }
+            // Play Store requires a minified/shrunk release build; proguard-rules.pro has no
+            // custom keep rules yet, so watch for reflection-based crashes in a release build.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
     compileOptions {

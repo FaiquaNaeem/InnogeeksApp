@@ -2,6 +2,7 @@ package com.example.innogeeks.feature_home.presentation.home
 
 import com.example.innogeeks.feature_home.domain.model.Achievement
 import com.example.innogeeks.feature_home.domain.model.ClubStats
+import com.example.innogeeks.feature_home.domain.model.CultureMoment
 import com.example.innogeeks.feature_home.domain.model.DomainPreview
 
 data class HomeState(
@@ -10,7 +11,7 @@ data class HomeState(
     val domains: List<DomainPreview> = emptyList(),
     val achievements: List<Achievement> = emptyList(),
     val tickerRows: List<List<String>> = emptyList(),
-    val cultureMoments: List<String> = emptyList(),
+    val cultureMoments: List<CultureMoment> = emptyList(),
     val selectedDomainId: String? = null,
     val error: String? = null
 ) {

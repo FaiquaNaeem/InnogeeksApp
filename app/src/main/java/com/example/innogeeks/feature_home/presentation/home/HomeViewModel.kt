@@ -83,8 +83,8 @@ class HomeViewModel(
                 viewModelScope.launch { _events.send(HomeEvent.NavigateToProfile) }
             }
 
-            HomeAction.OnClassCultureClick -> {
-                viewModelScope.launch { _events.send(HomeEvent.NavigateToEvents) }
+            is HomeAction.OnClassCultureClick -> {
+                viewModelScope.launch { _events.send(HomeEvent.NavigateToEvents(action.eventId)) }
             }
         }
     }

@@ -2,6 +2,7 @@ package com.example.innogeeks.feature_home.domain
 
 import com.example.innogeeks.feature_home.domain.model.Achievement
 import com.example.innogeeks.feature_home.domain.model.ClubStats
+import com.example.innogeeks.feature_home.domain.model.CultureMoment
 import com.example.innogeeks.feature_home.domain.model.DomainPreview
 
 interface HomeRepository {
@@ -10,5 +11,5 @@ interface HomeRepository {
     suspend fun getAchievements(): Result<List<Achievement>>
     // One inner list per ticker row.
     suspend fun getTickerKeywords(): Result<List<List<String>>>
-    suspend fun getCultureMoments(): Result<List<String>>
+    suspend fun getCultureMoments(): Result<List<CultureMoment>>
 }

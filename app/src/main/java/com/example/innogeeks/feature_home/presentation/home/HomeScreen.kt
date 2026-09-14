@@ -23,6 +23,7 @@ import com.example.innogeeks.core.domain.session.Session
 import com.example.innogeeks.core.presentation.components.SectionLabel
 import com.example.innogeeks.feature_home.domain.model.Achievement
 import com.example.innogeeks.feature_home.domain.model.ClubStats
+import com.example.innogeeks.feature_home.domain.model.CultureMoment
 import com.example.innogeeks.feature_home.presentation.home.components.AchievementsRow
 import com.example.innogeeks.feature_home.presentation.home.components.ClassCultureCard
 import com.example.innogeeks.feature_home.presentation.home.components.DomainWheel
@@ -31,6 +32,7 @@ import com.example.innogeeks.feature_home.presentation.home.components.HomeTopBa
 import com.example.innogeeks.feature_home.presentation.home.components.KeywordTicker
 import com.example.innogeeks.feature_home.presentation.home.components.previewDomains
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import edu.kiet.innogeeks.R
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.flow.collectLatest
@@ -43,7 +45,7 @@ fun HomeRoot(
     session: Session,
     onNavigateToProfile: () -> Unit,
     onNavigateToAuth: () -> Unit,
-    onNavigateToEvents: () -> Unit = {},
+    onNavigateToEvents: (eventId: String) -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -52,7 +54,7 @@ fun HomeRoot(
         viewModel.events.collectLatest { event ->
             when (event) {
                 HomeEvent.NavigateToProfile -> onNavigateToProfile()
-                HomeEvent.NavigateToEvents -> onNavigateToEvents()
+                is HomeEvent.NavigateToEvents -> onNavigateToEvents(event.eventId)
             }
         }
     }
@@ -146,7 +148,7 @@ fun HomeScreen(
             item {
                 ClassCultureCard(
                     moments = state.cultureMoments,
-                    onClick = { onAction(HomeAction.OnClassCultureClick) }
+                    onMomentClick = { moment -> onAction(HomeAction.OnClassCultureClick(moment.eventId)) }
                 )
             }
 
@@ -176,8 +178,24 @@ private val previewState = HomeState(
         listOf("Innovation", "Community", "Mentorship"),
         listOf("Hackathon", "Code", "Workshops")
     ),
-    cultureMoments = listOf("📡", "🤖", "🏆", "🎤", "🎉"),
-    selectedDomainId = "webd"
+    cultureMoments = listOf(
+        CultureMoment(
+            "cm1", "NASA Space Apps Challenge", "Ghaziabad Edition · 2025",
+            "150+ innovators, 35+ teams, and a ₹75,000 prize pool.",
+            R.drawable.event_nasa_a, "e27"
+        ),
+        CultureMoment(
+            "cm2", "InnoForge", "2025",
+            "A hands-on build sprint where teams shipped working prototypes in a day.",
+            R.drawable.event_innoforge_a, "e26"
+        ),
+        CultureMoment(
+            "cm3", "Winter of Code 3.0", "2024–25",
+            "Innogeeks' flagship open-source program.",
+            R.drawable.event_iwoc3, "e23"
+        )
+    ),
+    selectedDomainId = "appd"
 )
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, heightDp = 900)

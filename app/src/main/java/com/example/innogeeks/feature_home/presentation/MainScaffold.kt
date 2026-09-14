@@ -1,6 +1,7 @@
 package com.example.innogeeks.feature_home.presentation
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -73,8 +74,10 @@ import com.example.innogeeks.feature_resources.presentation.resources.ResourcesR
 import com.example.innogeeks.feature_home.domain.model.ClubStats
 import com.example.innogeeks.feature_home.presentation.home.HomeRoot
 import com.example.innogeeks.feature_home.presentation.home.HomeScreen
+import com.example.innogeeks.feature_home.domain.model.CultureMoment
 import com.example.innogeeks.feature_home.presentation.home.HomeState
 import com.example.innogeeks.ui.theme.InnogeeksTheme
+import edu.kiet.innogeeks.R
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import org.koin.compose.koinInject
@@ -129,9 +132,15 @@ fun MainScaffold(
     getRecruitmentStatusUseCase: GetRecruitmentStatusUseCase = koinInject()
 ) {
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    // Set when the Class Culture card wants Events to open on one specific event.
+    var pendingEventId by remember { mutableStateOf<String?>(null) }
     val hazeState = remember { HazeState() }
     var showBottomBar by remember { mutableStateOf(true) }
     LaunchedEffect(selectedTab) { showBottomBar = true }
+
+    // A tab's own NavHost (Domains/Events/Resources) registers its own back callback and pops
+    // first when it has something to pop, so this only fires once a tab is at its own root.
+    BackHandler(enabled = selectedTab != 0) { selectedTab = 0 }
 
     // Only REGISTERED users can ever be rejected — Member/Coordinator/Admin already passed
     // recruitment, so skip the fetch entirely for them (no network call, no stale-value risk).
@@ -184,10 +193,18 @@ fun MainScaffold(
                             session = session,
                             onNavigateToProfile = { selectedTab = 3 },
                             onNavigateToAuth = onNavigateToAuth,
-                            onNavigateToEvents = { selectedTab = 2 }
+                            onNavigateToEvents = { eventId ->
+                                pendingEventId = eventId
+                                selectedTab = 2
+                            }
                         )
                         1 -> DomainsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })
-                        2 -> EventsRoot(hazeState = hazeState, onBottomBarVisibilityChanged = { showBottomBar = it })
+                        2 -> EventsRoot(
+                            hazeState = hazeState,
+                            onBottomBarVisibilityChanged = { showBottomBar = it },
+                            initialEventId = pendingEventId,
+                            onInitialEventConsumed = { pendingEventId = null }
+                        )
                         3 -> ProfileRoot(hazeState = hazeState, onNavigateToAuth = onNavigateToAuth)
                     }
                 }
@@ -425,7 +442,13 @@ private fun MainScaffoldPreview() {
                         stats = ClubStats(150, 45, 6, 24),
                         domains = emptyList(),
                         tickerRows = listOf(listOf("Technology", "Design")),
-                        cultureMoments = listOf("📡", "🤖", "🏆")
+                        cultureMoments = listOf(
+                            CultureMoment(
+                                "cm1", "NASA Space Apps Challenge", "Ghaziabad Edition · 2025",
+                                "150+ innovators, 35+ teams, and a ₹75,000 prize pool.",
+                                R.drawable.event_nasa_a, "e27"
+                            )
+                        )
                     ),
                     hazeState = hazeState,
                     onAction = {}

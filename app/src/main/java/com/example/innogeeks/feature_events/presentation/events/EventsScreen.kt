@@ -68,6 +68,9 @@ import org.koin.androidx.compose.koinViewModel
 fun EventsRoot(
     hazeState: HazeState,
     onBottomBarVisibilityChanged: (Boolean) -> Unit = {},
+    // Set when another tab (e.g. Home's Class Culture card) wants to open one event directly.
+    initialEventId: String? = null,
+    onInitialEventConsumed: () -> Unit = {},
     viewModel: EventsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -76,6 +79,14 @@ fun EventsRoot(
     val backStackEntry by navController.currentBackStackEntryAsState()
     LaunchedEffect(backStackEntry) {
         onBottomBarVisibilityChanged(backStackEntry?.destination?.hasRoute<EventDetailRoute>() != true)
+    }
+
+    // Pushed on top of the list start destination, so Back lands on the list, not the Home tab.
+    LaunchedEffect(initialEventId) {
+        if (initialEventId != null) {
+            navController.navigate(EventDetailRoute(initialEventId))
+            onInitialEventConsumed()
+        }
     }
 
     NavHost(
